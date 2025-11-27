@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { FiUser, FiLogOut, FiFileText, FiMenu, FiX, FiCheck, FiXCircle, FiRefreshCw } from 'react-icons/fi';
+import { FiUser,FiClock,FiCode,FiRotateCcw,FiCheckCircle,FiLogOut, FiFileText, FiMenu, FiX, FiCheck, FiXCircle, FiRefreshCw } from 'react-icons/fi';
 
 const STATUS_STEPS = [
   'Process initiation',
@@ -1063,46 +1063,198 @@ const StudentDashboard = () => {
             </Card>
           )}
 
-          {/* STATUS */}
-          {active === 'status' && (
-            <Card className="p-4 sm:p-6 rounded-2xl shadow-lg overflow-auto">
-              <div className="flex items-center justify-between mb-4 gap-4">
-                <h2 className="text-lg font-semibold text-slate-900">Application Status</h2>
-                <div className="flex items-center gap-2">
-                  <div className="text-sm text-slate-500">Track your clearance progress</div>
-                  <button onClick={fetchApplicationStatus} title="Refresh status" className="p-2 rounded hover:bg-slate-100 text-slate-600" disabled={statusLoading} aria-busy={statusLoading}>
-                    <FiRefreshCw className={statusLoading ? 'animate-spin' : ''} />
-                  </button>
-                </div>
-              </div>
+{/* STATUS */}
+{active === 'status' && (
+  <Card className="p-6 rounded-2xl shadow-lg border border-gray-100 bg-white">
+    {/* Header Section */}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Status</h2>
+        <p className="text-gray-600 flex items-center gap-2">
+          <FiClock className="text-indigo-500" />
+          Track your clearance progress in real-time
+        </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="hidden sm:block text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
+          Last updated: {new Date().toLocaleTimeString()}
+        </div>
+        <button 
+          onClick={fetchApplicationStatus} 
+          title="Refresh status" 
+          className="p-3 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={statusLoading}
+          aria-busy={statusLoading}
+        >
+          <FiRefreshCw className={`w-5 h-5 ${statusLoading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+    </div>
 
-              <div className="mb-6">
-                <Stepper steps={departmentSteps} statuses={stepStatuses} />
-              </div>
+    {/* Progress Overview */}
+    <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 mb-8 border border-indigo-100">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-indigo-600 mb-1">
+            {stepStatuses.filter(s => s.status === 'completed').length}
+          </div>
+          <div className="text-sm text-gray-600">Completed</div>
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-yellow-600 mb-1">
+            {stepStatuses.filter(s => s.status === 'pending').length}
+          </div>
+          <div className="text-sm text-gray-600">Pending</div>
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-blue-600 mb-1">
+            {stepStatuses.filter(s => s.status === 'in-progress').length}
+          </div>
+          <div className="text-sm text-gray-600">In Progress</div>
+        </div>
+        <div className="text-center">
+          <div className="text-3xl font-bold text-gray-600 mb-1">
+            {departmentSteps.length}
+          </div>
+          <div className="text-sm text-gray-600">Total Steps</div>
+        </div>
+      </div>
+    </div>
 
-              <div className="mb-3 flex items-start gap-3">
-                <button onClick={() => setShowRawStatus(prev => !prev)} className="text-sm text-slate-600 underline hover:text-slate-800">{showRawStatus ? 'Hide raw response' : 'Show raw response'}</button>
-                {statusLoading && <div className="text-sm text-slate-500">Refreshing...</div>}
-                {statusError && <div className="text-sm text-red-600">{statusError}</div>}
-              </div>
+    {/* Progress Bar */}
+    <div className="mb-8">
+      <div className="flex justify-between items-center mb-3">
+        <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+        <span className="text-sm font-bold text-indigo-600">
+          {Math.round((stepStatuses.filter(s => s.status === 'completed').length / departmentSteps.length) * 100)}%
+        </span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-3">
+        <div 
+          className="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out"
+          style={{
+            width: `${(stepStatuses.filter(s => s.status === 'completed').length / departmentSteps.length) * 100}%`
+          }}
+        ></div>
+      </div>
+    </div>
 
-              {showRawStatus && (
-                <div className="mb-4 bg-slate-50 border border-slate-100 rounded p-3 text-xs text-slate-800 overflow-auto max-h-64">
-                  <pre className="whitespace-pre-wrap">{lastStatusBody ? JSON.stringify(lastStatusBody, null, 2) : 'No response captured yet'}</pre>
-                </div>
-              )}
+    {/* Stepper Component */}
+    <div className="mb-8">
+      <Stepper steps={departmentSteps} statuses={stepStatuses} />
+    </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-3">
-                <div className="text-sm text-slate-600">Completed {stepStatuses.filter(s => s.status === 'completed').length} of {departmentSteps.length}</div>
-
-                <div className="ml-auto flex flex-wrap items-center gap-2">
-                  <Button variant="outline" onClick={resetSteps}>Reset</Button>
-                  <Button variant="outline" onClick={failStepDev}>Fail step (dev)</Button>
-                  <Button variant="primary" onClick={advanceStepDev}>Advance step (dev)</Button>
-                </div>
-              </div>
-            </Card>
+    {/* Status Summary */}
+    <div className="bg-gray-50 rounded-xl p-4 mb-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {stepStatuses.filter(s => s.status === 'completed').length === departmentSteps.length ? (
+            <>
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-green-700 font-medium">All clearances completed!</span>
+            </>
+          ) : stepStatuses.some(s => s.status === 'failed') ? (
+            <>
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-red-700 font-medium">Some clearances require attention</span>
+            </>
+          ) : (
+            <>
+              <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+              <span className="text-blue-700 font-medium">Clearance in progress</span>
+            </>
           )}
+        </div>
+        <div className="text-sm text-gray-500">
+          {stepStatuses.filter(s => s.status === 'completed').length} of {departmentSteps.length} departments cleared
+        </div>
+      </div>
+    </div>
+
+    {/* Debug Section */}
+    <div className="border-t border-gray-200 pt-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowRawStatus(prev => !prev)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          >
+            <FiCode />
+            {showRawStatus ? 'Hide Raw Data' : 'Show Raw Data'}
+          </button>
+          {statusLoading && (
+            <div className="flex items-center gap-2 text-sm text-blue-600">
+              <FiRefreshCw className="animate-spin" />
+              Refreshing status...
+            </div>
+          )}
+          {statusError && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-1 rounded-lg">
+              <FiAlertCircle />
+              {statusError}
+            </div>
+          )}
+        </div>
+
+        {/* Developer Tools */}
+        <div className="flex flex-wrap gap-2">
+          <Button 
+            variant="outline" 
+            onClick={resetSteps}
+            className="text-xs px-3 py-2 border-gray-300 text-gray-600 hover:bg-gray-50"
+          >
+            <FiRotateCcw className="w-3 h-3 mr-1" />
+            Reset
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={failStepDev}
+            className="text-xs px-3 py-2 border-red-200 text-red-600 hover:bg-red-50"
+          >
+            <FiXCircle className="w-3 h-3 mr-1" />
+            Fail Step
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={advanceStepDev}
+            className="text-xs px-3 py-2 bg-green-600 hover:bg-green-700 text-white"
+          >
+            <FiCheckCircle className="w-3 h-3 mr-1" />
+            Advance Step
+          </Button>
+        </div>
+      </div>
+
+      {/* Raw Data Display */}
+      {showRawStatus && (
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 text-xs text-gray-300 overflow-auto max-h-64">
+          <div className="flex justify-between items-center mb-3">
+            <span className="font-mono text-sm text-gray-400">API Response</span>
+            <button 
+              onClick={() => navigator.clipboard.writeText(JSON.stringify(lastStatusBody, null, 2))}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <FiCopy className="w-4 h-4" />
+            </button>
+          </div>
+          <pre className="whitespace-pre-wrap font-mono">
+            {lastStatusBody ? JSON.stringify(lastStatusBody, null, 2) : 'No response data available'}
+          </pre>
+        </div>
+      )}
+    </div>
+
+    {/* Help Text */}
+    <div className="mt-6 text-center">
+      <p className="text-sm text-gray-500">
+        Need help? Contact the administration office at{' '}
+        <a href="mailto:support@university.edu" className="text-indigo-600 hover:underline">
+          support@university.edu
+        </a>
+      </p>
+    </div>
+  </Card>
+)}
         </main>
       </div>
     </div>

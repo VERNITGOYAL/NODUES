@@ -7,6 +7,7 @@ import {
   FaSignOutAlt, 
   FaUniversity,
   FaTimes,
+  FaUserPlus,
   FaBars 
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,7 +23,7 @@ const AdminSidebar = () => {
     { id: 'dashboard', label: 'Dashboard', icon: <FaTachometerAlt className="text-lg" />, path: `/admin/dashboard` },
     { id: 'pending', label: 'Pending', icon: <FaClock className="text-lg" />, path: `/admin/pending` },
     { id: 'history', label: 'History', icon: <FaHistory className="text-lg" />, path: `/admin/history` },
-    { id: 'create user', label: 'Create user', icon: <FaHistory className="text-lg" />, path: `/admin/create-user` },
+    { id: 'create user', label: 'Create user', icon: <FaUserPlus className="text-lg" />, path: `/admin/create-user` },
   ];
 
   // ✅ Determine active item based on current route

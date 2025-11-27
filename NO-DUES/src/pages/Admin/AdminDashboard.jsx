@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/common/Header';
 import AdminSidebar from './adminsidebar';
@@ -32,6 +32,9 @@ const AdminDashboard = () => {
   const [actionRemark, setActionRemark] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState('');
+
+  // Ref for the application popup
+  const applicationPopupRef = useRef(null);
 
   // Checklist state
   const [checklistItems, setChecklistItems] = useState([
@@ -96,6 +99,23 @@ const AdminDashboard = () => {
     { id: 2, label: 'Pending Applications', path: '/Admin/pending', icon: FiClock },
     { id: 3, label: 'Application History', path: '/Admin/history', icon: FiArchive },
   ];
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (applicationPopupRef.current && !applicationPopupRef.current.contains(event.target)) {
+        setSelectedApplication(null);
+      }
+    };
+
+    if (selectedApplication) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [selectedApplication]);
 
   // Load all applications from backend on component mount
   useEffect(() => {
@@ -444,6 +464,160 @@ const AdminDashboard = () => {
     );
   };
 
+  const renderApplicationPopup = () => {
+    if (!selectedApplication) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+
+        <div 
+          ref={applicationPopupRef}
+          className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        >
+          <div className="p-6">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Application Details</h2>
+                <p className="text-sm text-gray-500 mt-1">Review and take action on this application</p>
+              </div>
+              <button
+                onClick={() => setSelectedApplication(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <FiX size={24} />
+              </button>
+            </div>
+
+            {/* Application Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 ">
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Student Name</label>
+                  <p className="text-lg font-semibold text-gray-900">{selectedApplication.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Roll Number</label>
+                  <p className="text-gray-900">{selectedApplication.rollNo}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Enrollment Number</label>
+                  <p className="text-gray-900">{selectedApplication.enrollment ?? '—'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Course</label>
+                  <p className="text-gray-900">{selectedApplication.course ?? '—'}</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Email</label>
+                  <p className="text-gray-900">{selectedApplication.email ?? '—'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Mobile</label>
+                  <p className="text-gray-900">{selectedApplication.mobile ?? '—'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Application Date</label>
+                  <p className="text-gray-900">{formatDate(selectedApplication.date)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Status</label>
+                  <div className="mt-1">{renderStatusBadge(selectedApplication.status)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Section */}
+            <div className="bg-gray-50 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-semibold mb-4">Department Action</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Department
+                  </label>
+                  <select 
+                    value={actionDeptId ?? (DEPARTMENTS.find(d => d.name === selectedApplication.department)?.id || '')} 
+                    onChange={(e) => setActionDeptId(Number(e.target.value))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">Select Department</option>
+                    {DEPARTMENTS.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Remark {selectedApplication.status === 'Pending' && '(required for rejection)'}
+                  </label>
+                  <textarea 
+                    value={actionRemark} 
+                    onChange={(e) => setActionRemark(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="Enter your remarks here..."
+                  />
+                  {actionError && (
+                    <p className="text-red-600 text-sm mt-2">{actionError}</p>
+                  )}
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    disabled={actionLoading}
+                    onClick={() => handleDepartmentAction(
+                      selectedApplication, 
+                      actionDeptId || DEPARTMENTS.find(d => d.name === selectedApplication.department)?.id, 
+                      'approve', 
+                      actionRemark
+                    )}
+                    className="flex-1 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                  >
+                    <FiCheck className="mr-2" />
+                    {actionLoading ? 'Processing...' : 'Approve'}
+                  </button>
+                  
+                  <button
+                    disabled={actionLoading}
+                    onClick={() => handleDepartmentAction(
+                      selectedApplication, 
+                      actionDeptId || DEPARTMENTS.find(d => d.name === selectedApplication.department)?.id, 
+                      'reject', 
+                      actionRemark
+                    )}
+                    className="flex-1 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+                  >
+                    <FiX className="mr-2" />
+                    {actionLoading ? 'Processing...' : 'Reject'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex justify-end space-x-3 pt-4 border-t">
+              <button
+                onClick={() => setSelectedApplication(null)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Close
+              </button>
+              <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center transition-colors">
+                <FiDownload className="mr-2" />
+                Download Documents
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDashboard = () => {
     return (
       <>
@@ -751,46 +925,9 @@ const AdminDashboard = () => {
             {activeTab === 'dashboard' && renderDashboard()}
             {activeTab === 'pending' && renderPendingApplications()}
             {activeTab === 'history' && renderApplicationHistory()}
-            {/* Application detail drawer/modal */}
-            {selectedApplication && (
-              <div className="fixed right-6 top-20 w-96 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="text-sm text-slate-500">Application</div>
-                    <div className="font-semibold text-slate-900">{selectedApplication.name}</div>
-                  </div>
-                  <div>
-                    <button onClick={() => setSelectedApplication(null)} className="text-sm text-slate-500">Close</button>
-                  </div>
-                </div>
-
-                <div className="text-sm text-slate-700 mb-2"><strong>Roll:</strong> {selectedApplication.rollNo}</div>
-                <div className="text-sm text-slate-700 mb-2"><strong>Enrollment:</strong> {selectedApplication.enrollment ?? '—'}</div>
-                <div className="text-sm text-slate-700 mb-2"><strong>Email:</strong> {selectedApplication.email ?? '—'}</div>
-                <div className="text-sm text-slate-700 mb-2"><strong>Mobile:</strong> {selectedApplication.mobile ?? '—'}</div>
-                <div className="text-sm text-slate-700 mb-2"><strong>Department:</strong> {selectedApplication.department ?? '—'}</div>
-                <div className="text-sm text-slate-700 mb-4"><strong>Date:</strong> {formatDate(selectedApplication.date)}</div>
-
-                <div className="mb-3">
-                  <label className="block text-sm text-slate-600 mb-1">Select Department</label>
-                  <select value={actionDeptId ?? (DEPARTMENTS.find(d => d.name === selectedApplication.department)?.id || '')} onChange={(e) => setActionDeptId(Number(e.target.value))} className="w-full border border-gray-300 rounded px-2 py-1">
-                    <option value="">Select</option>
-                    {DEPARTMENTS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                  </select>
-                </div>
-
-                <div className="mb-3">
-                  <label className="block text-sm text-slate-600 mb-1">Remark (required for rejection)</label>
-                  <textarea value={actionRemark} onChange={(e) => setActionRemark(e.target.value)} className="w-full border border-gray-300 rounded p-2 text-sm" rows={3} />
-                  {actionError && <div className="text-xs text-red-600 mt-1">{actionError}</div>}
-                </div>
-
-                <div className="flex gap-2">
-                  <button disabled={actionLoading} onClick={() => handleDepartmentAction(selectedApplication, actionDeptId || DEPARTMENTS.find(d => d.name === selectedApplication.department)?.id, 'approve', actionRemark)} className="flex-1 bg-green-600 text-white px-3 py-2 rounded hover:bg-green-700">Approve</button>
-                  <button disabled={actionLoading} onClick={() => handleDepartmentAction(selectedApplication, actionDeptId || DEPARTMENTS.find(d => d.name === selectedApplication.department)?.id, 'reject', actionRemark)} className="flex-1 bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700">Reject</button>
-                </div>
-              </div>
-            )}
+            
+            {/* Application Popup */}
+            {renderApplicationPopup()}
           </main>
         </div>
       </div>

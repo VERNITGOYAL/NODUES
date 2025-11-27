@@ -1,11 +1,11 @@
 import React from 'react';
 import RoleLayout from '../../components/common/RoleLayout';
 
-export default function RejectedPage() {
+export default function HistoryPage() {
 	return (
 		<RoleLayout>
-			<div className="page rejected-page">
-				<h1 className="text-2xl font-bold mb-2">Admin - Rejected</h1>
+			<div className="page history-page">
+				<h1 className="text-2xl font-bold mb-2">Exam - History</h1>
 			</div>
 		</RoleLayout>
 	);

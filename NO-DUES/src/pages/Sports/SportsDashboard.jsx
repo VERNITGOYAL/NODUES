@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
-import { FiSearch, FiUser, FiMail, FiBook, FiDollarSign, FiCheckCircle, FiXCircle, FiUpload, FiDownload } from 'react-icons/fi';
+import { FiSearch, FiUser, FiMail, FiBook, FiDollarSign, FiCheckCircle, FiXCircle, FiUpload, FiDownload, FiEye } from 'react-icons/fi';
 
 const SportsDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, authFetch } = useAuth();
   const [rollNo, setRollNo] = useState('');
   const [studentData, setStudentData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -14,6 +14,57 @@ const SportsDashboard = () => {
     aadharCard: null,
     result: null
   });
+  const [applications, setApplications] = useState([]);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const applicationPopupRef = useRef(null);
+
+  // Load all applications from backend on component mount
+  useEffect(() => {
+    const fetchAllApplications = async () => {
+      try {
+        const API_URL = 'https://gbubackend-gbubackend.pagekite.me/api/approvals/all/enriched';
+        const res = await authFetch(API_URL, { method: 'GET' });
+        let data = [];
+        try { data = await res.json(); } catch (e) { data = []; }
+        const allApplications = Array.isArray(data)
+          ? data.map(app => ({
+              id: app.application_id || app.id || app._id,
+              rollNo: app.roll_number || app.rollNo || app.student_roll_no || '',
+              enrollment: app.enrollment_number || app.enrollmentNumber || '',
+              name: app.student_name || app.name || app.full_name || '',
+              date: app.created_at || app.application_date || app.date || '',
+              status: app.application_status || app.status || '',
+              course: app.course || app.student_course || '',
+              email: app.student_email || app.email || '',
+              mobile: app.student_mobile || app.mobile || '',
+              department: app.department_name || app.department || ''
+            }))
+          : [];
+        setApplications(allApplications);
+      } catch (err) {
+        setApplications([]);
+        console.error('Failed to fetch applications:', err);
+      }
+    };
+    fetchAllApplications();
+  }, [authFetch]);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (applicationPopupRef.current && !applicationPopupRef.current.contains(event.target)) {
+        setSelectedApplication(null);
+      }
+    };
+
+    if (selectedApplication) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [selectedApplication]);
 
   // Mock student database
   const mockStudentDatabase = [
@@ -258,7 +309,7 @@ const SportsDashboard = () => {
 
           {/* Recent Activities */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Recent No-Dues Applications</h2>
+            <h2 className="text-lg font-semibold mb-4">No-Dues Applications</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -268,6 +319,9 @@ const SportsDashboard = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Course
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
@@ -281,36 +335,39 @@ const SportsDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap">GBU2023001</td>
-                    <td className="px-6 py-4 whitespace-nowrap">Rahul Sharma</td>
-                    <td className="px-6 py-4 whitespace-nowrap">2025-09-01</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Approved
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="text-indigo-600 hover:text-indigo-900 flex items-center">
-                        <FiDownload className="mr-1" /> Download
-                      </button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap">GBU2023002</td>
-                    <td className="px-6 py-4 whitespace-nowrap">Priya Singh</td>
-                    <td className="px-6 py-4 whitespace-nowrap">2025-09-02</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        Pending
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="text-indigo-600 hover:text-indigo-900 flex items-center">
-                        <FiDownload className="mr-1" /> Download
-                      </button>
-                    </td>
-                  </tr>
+                  {applications.length > 0 ? (
+                    applications.map((app) => (
+                      <tr key={app.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{app.rollNo || '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{app.name || '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{app.course || '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{app.date ? new Date(app.date).toLocaleDateString() : '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            app.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                            app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {app.status || '—'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button 
+                            onClick={() => setSelectedApplication(app)}
+                            className="text-indigo-600 hover:text-indigo-900 flex items-center font-medium"
+                          >
+                            <FiEye className="mr-1" /> View
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                        No applications found
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

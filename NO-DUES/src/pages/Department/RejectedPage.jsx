@@ -5,7 +5,7 @@ export default function RejectedPage() {
 	return (
 		<RoleLayout>
 			<div className="page rejected-page">
-				<h1 className="text-2xl font-bold mb-2">Admin - Rejected</h1>
+				<h1 className="text-2xl font-bold mb-2">Exam - Rejected</h1>
 			</div>
 		</RoleLayout>
 	);
