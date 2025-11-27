@@ -17,11 +17,15 @@ const Sidebar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  // Role removed: use fixed paths
+  // ✅ Extract role from URL path (e.g., /hostels/dashboard -> hostels)
+  const role = location.pathname.split('/')[1] || 'dashboard';
+
+  // Role-based menu items
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <FaTachometerAlt className="text-lg" />, path: `/dashboard` },
-    { id: 'pending', label: 'Applications', icon: <FaClock className="text-lg" />, path: `/pending` },
-    { id: 'history', label: 'History', icon: <FaHistory className="text-lg" />, path: `/history` },
+    { id: 'dashboard', label: 'Dashboard', icon: <FaTachometerAlt className="text-lg" />, path: `/${role}/dashboard` },
+    { id: 'pending', label: 'Pending', icon: <FaClock className="text-lg" />, path: `/${role}/pending` },
+    { id: 'rejected', label: 'Rejected', icon: <FaClock className="text-lg" />, path: `/${role}/rejected` },
+    { id: 'history', label: 'History', icon: <FaHistory className="text-lg" />, path: `/${role}/history` },
   ];
 
   // ✅ Determine active item based on current route

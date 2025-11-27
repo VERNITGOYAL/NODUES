@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
-import { FiSearch, FiUser, FiMail, FiBook, FiDollarSign, FiCheckCircle, FiXCircle, FiUpload, FiDownload } from 'react-icons/fi';
+import { FiSearch, FiUser, FiMail, FiBook, FiCheckCircle, FiXCircle, FiUpload, FiDownload, FiX, FiEye, FiCheck, FiFilter, FiClock, FiTrendingUp } from 'react-icons/fi';
 
 const AccountsDashboard = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, authFetch, token } = useAuth();
   const [rollNo, setRollNo] = useState('');
   const [studentData, setStudentData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -14,6 +14,14 @@ const AccountsDashboard = () => {
     aadharCard: null,
     result: null
   });
+  const [applications, setApplications] = useState([]);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [actionDeptId, setActionDeptId] = useState(null);
+  const [actionRemark, setActionRemark] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const applicationPopupRef = useRef(null);
 
   // Mock student database
   const mockStudentDatabase = [
@@ -59,11 +67,58 @@ const AccountsDashboard = () => {
   ];
 
   const officeMenuItems = [
-    { id: 1, label: 'Dashboard', path: '/office/dashboard' },
-    { id: 2, label: 'Student Search', path: '/office/search' },
-    { id: 3, label: 'Document Verification', path: '/office/verification' },
-    { id: 4, label: 'No-Dues Status', path: '/office/status' },
+    { id: 1, label: 'Dashboard', path: '/accounts/dashboard' },
+    { id: 2, label: 'Pending', path: '/accounts/pending' },
+    { id: 3, label: 'History', path: '/accounts/history' },
   ];
+
+  // Load all applications from backend on component mount
+  useEffect(() => {
+    const fetchAllApplications = async () => {
+      try {
+        const API_URL = 'https://gbubackend-gbubackend.pagekite.me/api/approvals/all/enriched';
+        const res = await authFetch(API_URL, { method: 'GET' });
+        let data = [];
+        try { data = await res.json(); } catch (e) { data = []; }
+        const allApplications = Array.isArray(data)
+          ? data.map(app => ({
+              id: app.application_id || app.id || app._id,
+              rollNo: app.roll_number || app.rollNo || app.student_roll_no || '',
+              enrollment: app.enrollment_number || app.enrollmentNumber || '',
+              name: app.student_name || app.name || app.full_name || '',
+              date: app.created_at || app.application_date || app.date || '',
+              status: app.application_status || app.status || '',
+              course: app.course || app.student_course || '',
+              email: app.student_email || app.email || '',
+              mobile: app.student_mobile || app.mobile || '',
+              department: app.department_name || app.department || ''
+            }))
+          : [];
+        setApplications(allApplications);
+      } catch (err) {
+        setApplications([]);
+        console.error('Failed to fetch applications:', err);
+      }
+    };
+    fetchAllApplications();
+  }, [authFetch]);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (applicationPopupRef.current && !applicationPopupRef.current.contains(event.target)) {
+        setSelectedApplication(null);
+      }
+    };
+
+    if (selectedApplication) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [selectedApplication]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -86,17 +141,94 @@ const AccountsDashboard = () => {
     }));
   };
 
-  const handleSubmitNoDues = () => {
-    // In a real application, this would submit the data to the backend
-    alert('No-Dues application submitted successfully!');
-    // Reset form
-    setStudentData(null);
-    setRollNo('');
-    setUploadedFiles({
-      cancellationCheque: null,
-      aadharCard: null,
-      result: null
-    });
+  const handleSubmitNoDues = async () => {
+    if (!studentData) {
+      alert('Please search for a student first');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Check if all documents are uploaded
+      if (!uploadedFiles.cancellationCheque || !uploadedFiles.aadharCard || !uploadedFiles.result) {
+        alert('Please upload all required documents');
+        setIsLoading(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('roll_number', studentData.rollNo);
+      formData.append('student_name', studentData.name);
+      formData.append('student_email', studentData.email);
+      formData.append('student_mobile', studentData.phone);
+      formData.append('course', studentData.course);
+      formData.append('department', 'Accounts');
+      formData.append('cancellation_cheque', uploadedFiles.cancellationCheque);
+      formData.append('aadhar_card', uploadedFiles.aadharCard);
+      formData.append('result_document', uploadedFiles.result);
+
+      const API_URL = 'https://gbubackend-gbubackend.pagekite.me/api/approvals/create';
+      
+      // For file uploads, we need to bypass authFetch to avoid Content-Type header override
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        body: formData,
+        headers: headers
+        // Don't set Content-Type header - let browser set it to multipart/form-data
+      });
+
+      let data = {};
+      try { 
+        data = await res.json(); 
+      } catch (e) { 
+        console.error('Failed to parse response:', e);
+      }
+
+      if (res.ok) {
+        alert('No-Dues application submitted successfully!');
+        // Reset form
+        setStudentData(null);
+        setRollNo('');
+        setUploadedFiles({
+          cancellationCheque: null,
+          aadharCard: null,
+          result: null
+        });
+        // Refresh applications list
+        const refetchRes = await authFetch('https://gbubackend-gbubackend.pagekite.me/api/approvals/all/enriched', { method: 'GET' });
+        let refetchData = [];
+        try { refetchData = await refetchRes.json(); } catch (e) { refetchData = []; }
+        const allApplications = Array.isArray(refetchData)
+          ? refetchData.map(app => ({
+              id: app.application_id || app.id || app._id,
+              rollNo: app.roll_number || app.rollNo || app.student_roll_no || '',
+              enrollment: app.enrollment_number || app.enrollmentNumber || '',
+              name: app.student_name || app.name || app.full_name || '',
+              date: app.created_at || app.application_date || app.date || '',
+              status: app.application_status || app.status || '',
+              course: app.course || app.student_course || '',
+              email: app.student_email || app.email || '',
+              mobile: app.student_mobile || app.mobile || '',
+              department: app.department_name || app.department || ''
+            }))
+          : [];
+        setApplications(allApplications);
+      } else {
+        const errorMsg = data.detail || data.message || `Request failed with status ${res.status}`;
+        alert(`Error: ${errorMsg}`);
+        console.error('Submit failed:', res.status, data);
+      }
+    } catch (err) {
+      console.error('Failed to submit application:', err);
+      alert(`Error: ${err.message || 'Failed to submit application'}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderStatusBadge = (status) => {
@@ -282,7 +414,7 @@ const AccountsDashboard = () => {
 
           {/* Recent Activities */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Recent No-Dues Applications</h2>
+            <h2 className="text-lg font-semibold mb-4">No-Dues Applications</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -292,6 +424,9 @@ const AccountsDashboard = () => {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Course
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date
@@ -305,36 +440,39 @@ const AccountsDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap">GBU2023001</td>
-                    <td className="px-6 py-4 whitespace-nowrap">Rahul Sharma</td>
-                    <td className="px-6 py-4 whitespace-nowrap">2025-09-01</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        Approved
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="text-indigo-600 hover:text-indigo-900 flex items-center">
-                        <FiDownload className="mr-1" /> Download
-                      </button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="px-6 py-4 whitespace-nowrap">GBU2023002</td>
-                    <td className="px-6 py-4 whitespace-nowrap">Priya Singh</td>
-                    <td className="px-6 py-4 whitespace-nowrap">2025-09-02</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        Pending
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="text-indigo-600 hover:text-indigo-900 flex items-center">
-                        <FiDownload className="mr-1" /> Download
-                      </button>
-                    </td>
-                  </tr>
+                  {applications.length > 0 ? (
+                    applications.map((app) => (
+                      <tr key={app.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{app.rollNo || '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{app.name || '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-700">{app.course || '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">{app.date ? new Date(app.date).toLocaleDateString() : '—'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            app.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                            app.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {app.status || '—'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button 
+                            onClick={() => setSelectedApplication(app)}
+                            className="text-indigo-600 hover:text-indigo-900 flex items-center font-medium"
+                          >
+                            <FiEye className="mr-1" /> View
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                        No applications found
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
