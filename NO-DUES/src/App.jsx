@@ -49,7 +49,7 @@ import LaboratoriesPending from './pages/Laboratories/PendingPage';
 import LaboratoriesHistory from './pages/Laboratories/HistoryPage';
 
 // Department Pages
-import DepartmentDashboard from './pages/Department/DepartmentDashboard';
+import DepartmentDashboard from './pages/Department/SchoolDashboard';
 import DepartmentPending from './pages/Department/PendingPage';
 import DepartmentHistory from './pages/Department/HistoryPage';
 import DepartmentRejected from './pages/Department/RejectedPage';
