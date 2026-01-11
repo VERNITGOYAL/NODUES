@@ -17,9 +17,19 @@ const StudentRegister = () => {
     fullName: '',
     email: '',
     mobileNumber: '',
+    schoolId: '',
     password: '',
     confirmPassword: '',
   };
+  // School options for dropdown
+  const schoolOptions = [
+    { id: 1, name: 'School of ICT', code: 'SOICT' },
+    { id: 2, name: 'School of Management', code: 'SOM' },
+    { id: 3, name: 'School of Engineering', code: 'SOE' },
+    { id: 4, name: 'School of Biotechnology', code: 'SOBT' },
+    { id: 5, name: 'School of VSAS', code: 'SOVSAS' },
+    { id: 6, name: 'School of SOHSS', code: 'SOHSS' },
+  ];
 
   const [form, setForm] = useState(initialForm);
   const { register } = useStudentAuth();
@@ -40,6 +50,7 @@ const StudentRegister = () => {
     if (!form.fullName) err.fullName = 'This field is required';
     if (!form.email) err.email = 'This field is required';
     if (!form.mobileNumber) err.mobileNumber = 'This field is required';
+    if (!form.schoolId) err.schoolId = 'Select your School';
     if (!form.password) err.password = 'This field is required';
     if (!form.confirmPassword) err.confirmPassword = 'This field is required';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) err.email = 'Enter a valid email';
@@ -65,8 +76,9 @@ const StudentRegister = () => {
         enrollment_number: form.enrollmentNumber,
         roll_number: form.rollNumber,
         full_name: form.fullName,
-        email: form.email,
         mobile_number: form.mobileNumber,
+        email: form.email,
+        school_id: Number(form.schoolId),
         password: form.password,
         confirm_password: form.confirmPassword
       };
@@ -188,6 +200,23 @@ const StudentRegister = () => {
                     className="border border-gray-200"
                   />
                   {errors.mobileNumber && <div className="text-xs text-red-600 mt-1">{errors.mobileNumber}</div>}
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm mb-1">School</label>
+                  <select
+                    name="schoolId"
+                    value={form.schoolId}
+                    onChange={handleChange}
+                    className="border border-gray-200 rounded-md w-full p-2"
+                    required
+                  >
+                    <option value="">Select School</option>
+                    {schoolOptions.map((school) => (
+                      <option key={school.id} value={school.id}>{school.code}</option>
+                    ))}
+                  </select>
+                  {errors.schoolId && <div className="text-xs text-red-600 mt-1">{errors.schoolId}</div>}
                 </div>
                 <div>
                   <label className="block text-sm mb-1">Create Password</label>
