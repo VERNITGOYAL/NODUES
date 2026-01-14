@@ -1,41 +1,41 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FiUsers, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
-
-const cardVariants = {
-  initial: { scale: 0.95, opacity: 0 },
-  animate: { scale: 1, opacity: 1 },
-  hover: { scale: 1.05, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' },
-};
+import { FiUsers } from 'react-icons/fi';
 
 const DashboardStats = ({ stats }) => {
-  const { total, pending, approved, rejected } = stats;
-
-  const statItems = [
-    { label: 'Total', count: total, icon: FiUsers, color: 'text-indigo-500', border: 'border-indigo-500', text: 'text-gray-900' },
-    { label: 'Pending', count: pending, icon: FiClock, color: 'text-yellow-500', border: 'border-yellow-500', text: 'text-yellow-600' },
-  ];
+  const { total } = stats;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      {statItems.map((item, index) => (
-        <motion.div
-          key={item.label}
-          className={`bg-white p-5 rounded-xl shadow-lg border-l-4 ${item.border} transition-shadow duration-300 hover:shadow-xl`}
-          variants={cardVariants}
-          initial="initial"
-          animate="animate"
-          whileHover="hover"
-          transition={{ delay: index * 0.1 }}
-        >
-          <div className='flex items-center justify-between'>
-            <p className="text-sm font-semibold text-gray-500 uppercase">{item.label}</p>
-            <item.icon className={`${item.color} text-xl`} />
-          </div>
-          <p className={`text-3xl font-bold mt-1 ${item.text}`}>{item.count}</p>
-        </motion.div>
-      ))}
+    <div className="flex items-center gap-4 mb-6">
+      {/* Compact Total Badge */}
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex items-center gap-3 bg-white border border-slate-200/60 pl-3 pr-4 py-1.5 rounded-full shadow-sm"
+      >
+        <div className="p-1.5 bg-blue-50 rounded-full text-blue-500">
+          <FiUsers size={14} />
+        </div>
+        
+        <div className="flex items-baseline gap-2">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Total Requests
+          </span>
+          <span className="text-sm font-black text-slate-900">
+            {total}
+          </span>
+        </div>
+
+        {/* Status Indicator */}
+        <div className="flex items-center gap-1.5 ml-2 border-l border-slate-100 pl-3">
+          <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
+            Live
+          </span>
+        </div>
+      </motion.div>
     </div>
   );
 };
+
 export default DashboardStats;

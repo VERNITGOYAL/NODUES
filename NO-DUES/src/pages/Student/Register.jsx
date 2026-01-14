@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiShield, FiLogIn, FiArrowLeft } from 'react-icons/fi';
+import { 
+  FiShield, FiLogIn, FiArrowLeft, FiUser, FiMail, 
+  FiPhone, FiHash, FiLock, FiCheckCircle, FiRefreshCw, FiImage 
+} from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '../../components/ui/Card';
+import axios from 'axios';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
 
 const StudentRegister = () => {
   const navigate = useNavigate();
+  const { register } = useStudentAuth();
 
-  const initialForm = {
+  const [form, setForm] = useState({
     enrollmentNumber: '',
     rollNumber: '',
     fullName: '',
@@ -20,8 +23,14 @@ const StudentRegister = () => {
     schoolId: '',
     password: '',
     confirmPassword: '',
-  };
-  // School options for dropdown
+  });
+
+  // --- CAPTCHA States ---
+  const [captchaInput, setCaptchaInput] = useState('');
+  const [captchaImage, setCaptchaImage] = useState(null);
+  const [captchaHash, setCaptchaHash] = useState('');
+  const [captchaLoading, setCaptchaLoading] = useState(false);
+
   const schoolOptions = [
     { id: 1, name: 'School of ICT', code: 'SOICT' },
     { id: 2, name: 'School of Management', code: 'SOM' },
@@ -31,48 +40,64 @@ const StudentRegister = () => {
     { id: 6, name: 'School of SOHSS', code: 'SOHSS' },
   ];
 
-  const [form, setForm] = useState(initialForm);
-  const { register } = useStudentAuth();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState({});
 
+  /**
+   * ✅ Fetch Captcha Logic
+   */
+  const fetchCaptcha = async () => {
+    setCaptchaLoading(true);
+    try {
+      const rawBase = import.meta.env.VITE_API_BASE || '';
+      const API_BASE = rawBase.replace(/\/+$/g, '');
+      const response = await axios.get(`${API_BASE}/api/captcha/generate`);
+      setCaptchaImage(response.data.image);
+      setCaptchaHash(response.data.captcha_hash);
+    } catch (err) {
+      console.error("Captcha load failed", err);
+    } finally {
+      setCaptchaLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCaptcha();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    let val = value;
+    if (name === 'enrollmentNumber' || name === 'mobileNumber') {
+      val = value.replace(/\D/g, '').slice(0, name === 'mobileNumber' ? 10 : 15);
+    }
+    setForm(prev => ({ ...prev, [name]: val }));
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const validate = () => {
     const err = {};
-    if (!form.enrollmentNumber) err.enrollmentNumber = 'Provide Enrollment Number';
-    if (!form.rollNumber) err.rollNumber = 'Provide Roll Number';
-    if (!form.fullName) err.fullName = 'This field is required';
-    if (!form.email) err.email = 'This field is required';
-    if (!form.mobileNumber) err.mobileNumber = 'This field is required';
-    if (!form.schoolId) err.schoolId = 'Select your School';
-    if (!form.password) err.password = 'This field is required';
-    if (!form.confirmPassword) err.confirmPassword = 'This field is required';
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) err.email = 'Enter a valid email';
-    if (form.password && form.password.length < 6) err.password = 'Password should be at least 6 characters';
-    if (form.password !== form.confirmPassword) err.confirmPassword = 'Passwords do not match';
+    if (!form.enrollmentNumber) err.enrollmentNumber = 'Required';
+    if (!form.rollNumber) err.rollNumber = 'Required';
+    if (!form.fullName) err.fullName = 'Required';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) err.email = 'Invalid email';
+    if (form.mobileNumber.length !== 10) err.mobileNumber = '10 digits required';
+    if (!form.schoolId) err.schoolId = 'Select School';
+    if (form.password.length < 6) err.password = 'Min 6 chars';
+    if (form.password !== form.confirmPassword) err.confirmPassword = 'Mismatch';
+    if (!captchaInput) err.captcha = 'Required';
     return err;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('');
     const v = validate();
-    if (Object.keys(v).length) {
-      setErrors(v);
-      const firstKey = Object.keys(v)[0];
-      const el = document.querySelector(`[name="${firstKey}"]`);
-      if (el && el.focus) el.focus();
-      return;
-    }
+    if (Object.keys(v).length) return setErrors(v);
+
     setLoading(true);
     try {
-      const payload = {
+      await register({
         enrollment_number: form.enrollmentNumber,
         roll_number: form.rollNumber,
         full_name: form.fullName,
@@ -80,224 +105,151 @@ const StudentRegister = () => {
         email: form.email,
         school_id: Number(form.schoolId),
         password: form.password,
-        confirm_password: form.confirmPassword
-      };
-      console.debug('Register payload:', { enrollment_number: payload.enrollment_number, roll_number: payload.roll_number, full_name: payload.full_name, email: payload.email });
-      await register(payload);
-      setMessage('Registration successful. Please login.');
-      setTimeout(() => navigate('/student/login'), 900);
+        confirm_password: form.confirmPassword,
+        captcha_input: captchaInput, // ✅ Added for API
+        captcha_hash: captchaHash    // ✅ Added for API
+      });
+      setMessage('Success! Redirecting...');
+      setTimeout(() => navigate('/student/login'), 1500);
     } catch (err) {
-      setMessage(err.message || 'Registration failed');
+      setMessage(err.message || 'Registration failed.');
+      fetchCaptcha(); // Refresh captcha on error
+      setCaptchaInput('');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBackToMain = () => navigate('/', { replace: true });
+  const labelStyle = "text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-1 block";
+  const inputContainer = "relative transition-all duration-200 focus-within:transform focus-within:scale-[1.01]";
 
   return (
-    
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-     {/* Back button to main */}
-        <button
-          onClick={handleBackToMain}
-          className="absolute top-4 left-8 p-2 bg-white rounded-md shadow hover:bg-gray-50"
-          aria-label="Back to main"
-        >
-          <FiArrowLeft className="text-gray-700" />
-        </button>
+    <div className="h-screen w-full bg-[#fcfdfe] flex items-center justify-center p-4 lg:p-0 overflow-hidden font-sans">
+      {/* Background Decor */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-50/50 rounded-full blur-3xl" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-indigo-50/50 rounded-full blur-3xl" />
+      </div>
 
-      <div className="w-full max-w-2xl relative">
-        {/* Header with animation */}
-        <motion.div
-          initial={{ opacity: 0, y: -18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="text-center mb-6"
-        >
-          <h1 className="text-3xl font-semibold text-indigo-900 mb-1">Gautam Buddha University</h1>
-          <div className="mt-1">
-            <Badge type="primary" className="inline-flex items-center">
-              <FiShield className="mr-1" /> NoDues Management
-            </Badge>
+      <button
+        onClick={() => navigate('/', { replace: true })}
+        className="absolute top-6 left-6 p-2.5 bg-white/80 backdrop-blur-md rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 z-50 transition-all"
+      >
+        <FiArrowLeft className="text-slate-600" size={18} />
+      </button>
+
+      <div className="w-full max-w-4xl grid lg:grid-cols-12 gap-0 bg-white rounded-[2rem] shadow-2xl shadow-blue-900/5 border border-slate-100 overflow-hidden relative z-10">
+        
+        {/* Left Sidebar */}
+        <div className="lg:col-span-4 bg-slate-900 p-8 flex flex-col justify-between text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <div className="h-full w-full bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-blue-400 via-transparent to-transparent" />
           </div>
-        </motion.div>
+          <div className="relative z-10">
+            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
+              <FiShield size={24} />
+            </div>
+            <h1 className="text-2xl font-black leading-tight tracking-tight uppercase">Gautam Buddha <br /> University</h1>
+            <p className="text-slate-400 text-xs mt-4 font-medium uppercase tracking-[0.2em]">Student Registry</p>
+          </div>
+        </div>
 
-       
+        {/* Right Content */}
+        <div className="lg:col-span-8 p-6 lg:p-10 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="max-w-xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Student Registration</h2>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Create your academic profile</p>
+            </div>
 
-        {/* Card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.45 }}
-        >
-          <Card className="p-6 shadow-xl">
-            <h2 className="text-2xl font-bold text-gray-800 mb-1 text-center">Student Registration</h2>
-            <p className="text-sm text-gray-600 mb-4 text-center">Fill the fields below to create your account</p>
-
-            {message && (
-              <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">
-                {message}
-              </div>
-            )}
-
+            <AnimatePresence mode="wait">
+              {message && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className={`mb-4 p-3 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-2 ${message.includes('Success') ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                  {message.includes('Success') ? <FiCheckCircle /> : <FiRefreshCw />} {message}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm mb-1">Enrollment Number</label>
-                  <Input
-                    name="enrollmentNumber"
-                    value={form.enrollmentNumber}
-                    onChange={handleChange}
-                    className="border border-gray-200"
-                  />
-                  {errors.enrollmentNumber && <div className="text-xs text-red-600 mt-1">{errors.enrollmentNumber}</div>}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className={labelStyle}>Enrollment No</label>
+                  <div className={inputContainer}>
+                    <FiHash className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <Input name="enrollmentNumber" value={form.enrollmentNumber} onChange={handleChange} placeholder="Enrollment Number" className={`pl-10 h-10 text-xs font-bold ${errors.enrollmentNumber ? 'border-red-300' : 'border-slate-200'}`} />
+                  </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm mb-1">Roll Number</label>
-                  <Input
-                    name="rollNumber"
-                    value={form.rollNumber}
-                    onChange={handleChange}
-                    className="border border-gray-200"
-                  />
-                  {errors.rollNumber && <div className="text-xs text-red-600 mt-1">{errors.rollNumber}</div>}
+                <div className="space-y-1">
+                  <label className={labelStyle}>Roll Number</label>
+                  <div className={inputContainer}>
+                    <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                    <Input name="rollNumber" value={form.rollNumber} onChange={handleChange} placeholder="e.g. 23ICS" className={`pl-10 h-10 text-xs font-bold uppercase ${errors.rollNumber ? 'border-red-300' : 'border-slate-200'}`} />
+                  </div>
                 </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm mb-1">Full Name</label>
-                  <Input
-                    name="fullName"
-                    value={form.fullName}
-                    onChange={handleChange}
-                    required
-                    className="border border-gray-200"
-                  />
-                  {errors.fullName && <div className="text-xs text-red-600 mt-1">{errors.fullName}</div>}
+                <div className="col-span-2 space-y-1">
+                  <label className={labelStyle}>Full Name</label>
+                  <Input name="fullName" value={form.fullName} onChange={handleChange} placeholder="As per official documents" className="h-10 text-xs font-bold bg-slate-50" />
                 </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm mb-1">Email ID</label>
-                  <Input
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    required
-                    className="border border-gray-200"
-                  />
-                  {errors.email && <div className="text-xs text-red-600 mt-1">{errors.email}</div>}
+                <div className="space-y-1">
+                  <label className={labelStyle}>Official Email</label>
+                  <Input name="email" value={form.email} onChange={handleChange} placeholder="name@gbu.ac.in" className="h-10 text-xs font-bold bg-slate-50" />
                 </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm mb-1">Mobile Number</label>
-                  <Input
-                    name="mobileNumber"
-                    value={form.mobileNumber}
-                    onChange={handleChange}
-                    required
-                    className="border border-gray-200"
-                  />
-                  {errors.mobileNumber && <div className="text-xs text-red-600 mt-1">{errors.mobileNumber}</div>}
+                <div className="space-y-1">
+                  <label className={labelStyle}>Mobile</label>
+                  <Input name="mobileNumber" value={form.mobileNumber} onChange={handleChange} placeholder="10 Digits" className="h-10 text-xs font-bold bg-slate-50" />
                 </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm mb-1">School</label>
-                  <select
-                    name="schoolId"
-                    value={form.schoolId}
-                    onChange={handleChange}
-                    className="border border-gray-200 rounded-md w-full p-2"
-                    required
-                  >
-                    <option value="">Select School</option>
-                    {schoolOptions.map((school) => (
-                      <option key={school.id} value={school.id}>{school.code}</option>
-                    ))}
+                <div className="col-span-2 space-y-1">
+                  <label className={labelStyle}>Academic School</label>
+                  <select name="schoolId" value={form.schoolId} onChange={handleChange} className="w-full h-10 px-4 rounded-lg text-xs font-bold border border-slate-200 bg-slate-50 outline-none">
+                    <option value="">Select University School</option>
+                    {schoolOptions.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
-                  {errors.schoolId && <div className="text-xs text-red-600 mt-1">{errors.schoolId}</div>}
                 </div>
-                <div>
-                  <label className="block text-sm mb-1">Create Password</label>
-                  <Input
-                    name="password"
-                    type="password"
-                    value={form.password}
-                    onChange={handleChange}
-                    required
-                    className="border border-gray-200"
-                  />
-                  {errors.password && <div className="text-xs text-red-600 mt-1">{errors.password}</div>}
+                <div className="space-y-1">
+                  <label className={labelStyle}>Password</label>
+                  <Input name="password" type="password" value={form.password} onChange={handleChange} className="h-10 text-xs font-bold bg-slate-50" />
                 </div>
-
-                <div>
-                  <label className="block text-sm mb-1">Confirm Password</label>
-                  <Input
-                    name="confirmPassword"
-                    type="password"
-                    value={form.confirmPassword}
-                    onChange={handleChange}
-                    required
-                    className="border border-gray-200"
-                  />
-                  {errors.confirmPassword && <div className="text-xs text-red-600 mt-1">{errors.confirmPassword}</div>}
+                <div className="space-y-1">
+                  <label className={labelStyle}>Confirm</label>
+                  <Input name="confirmPassword" type="password" value={form.confirmPassword} onChange={handleChange} className="h-10 text-xs font-bold bg-slate-50" />
                 </div>
               </div>
 
-              <div className="pt-2">
-                <div className="flex gap-3">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={loading}
-                    className="flex-1 py-3 bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 flex items-center justify-center border border-transparent rounded-md"
-                  >
-                    <AnimatePresence mode="wait">
-                      {loading ? (
-                        <motion.span key="reg-loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center">
-                          <motion.span animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="mr-2"><FiLogIn /></motion.span>
-                          Registering...
-                        </motion.span>
-                      ) : (
-                        <motion.span key="reg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center">
-                          <FiLogIn className="mr-2" />
-                          Register
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="flex-1 py-3 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center rounded-md"
-                    onClick={() => navigate('/student/login')}
-                  >
-                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="flex items-center">
-                      Back to Login
-                    </motion.span>
-                  </Button>
+              {/* ✅ INTEGRATED CAPTCHA SECTION */}
+              <div className="pt-2 border-t border-slate-100">
+                <div className="flex justify-between items-center mb-2">
+                  <label className={labelStyle}>Security Verification</label>
+                  <button type="button" onClick={fetchCaptcha} className="text-[9px] font-black text-slate-400 hover:text-blue-600 uppercase flex items-center gap-1 transition-colors">
+                    <FiRefreshCw className={captchaLoading ? 'animate-spin' : ''} /> Refresh
+                  </button>
                 </div>
-
-                <div className="mt-3 text-xs text-center text-gray-500">
-                  By registering you agree to the university's policies. 
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="col-span-2 h-11 bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center overflow-hidden">
+                    {captchaLoading ? <div className="animate-pulse bg-slate-200 w-full h-full" /> : <img src={captchaImage} alt="Captcha" className="h-full w-full object-cover" />}
+                  </div>
+                  <div className="col-span-3">
+                    <Input value={captchaInput} onChange={(e) => setCaptchaInput(e.target.value)} placeholder="Type Code" className="h-11 bg-slate-50 border-slate-200 rounded-xl text-center text-xs font-black uppercase tracking-[0.2em] focus:bg-white w-full" required />
+                  </div>
                 </div>
+              </div>
+
+              <div className="pt-4 flex flex-col items-center gap-4">
+                <Button type="submit" disabled={loading || captchaLoading} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2">
+                  {loading ? <FiRefreshCw className="animate-spin" /> : <FiLogIn />} Register Account
+                </Button>
+                <button type="button" onClick={() => navigate('/student/login')} className="text-[10px] font-bold text-slate-400 hover:text-blue-600 uppercase tracking-widest">
+                  Already have an account? <span className="text-blue-500 underline underline-offset-4">Sign In</span>
+                </button>
               </div>
             </form>
-          </Card>
-        </motion.div>
-
-        {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.5 }}
-          className="text-center mt-4 text-xs text-gray-600"
-        >
-          <p>© {new Date().getFullYear()} Gautam Buddha University.</p>
-        </motion.div>
+          </div>
+        </div>
       </div>
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+      `}</style>
     </div>
   );
 };

@@ -11,7 +11,6 @@ Currently, two official plugins are available:
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
 
-```
 
 ```
 NO-DUES
@@ -106,6 +105,27 @@ NO-DUES
 │  │  │  ├─ DashboardStats.jsx
 │  │  │  └─ HistoryPage.jsx
 │  │  ├─ Admin
+│  │  │  ├─ AdminDashboard.jsx
+│  │  │  ├─ ApplicationDetailModal.jsx
+│  │  │  ├─ ApplicationManagement.jsx
+│  │  │  ├─ AuditLogs.jsx
+│  │  │  ├─ CreateDepartmentModal.jsx
+│  │  │  ├─ CreateSchoolModal.jsx
+│  │  │  ├─ DashboardStats.jsx
+│  │  │  ├─ DeleteConfirmModal.jsx
+│  │  │  ├─ DeleteStructureModal.jsx
+│  │  │  ├─ LogoutConfirmModal.jsx
+│  │  │  ├─ PerformanceChart.jsx
+│  │  │  ├─ ProfileModal.jsx
+│  │  │  ├─ QuickActions.jsx
+│  │  │  ├─ RecentLogsWidget.jsx
+│  │  │  ├─ RegisterUserModal.jsx
+│  │  │  ├─ RejectionModal.jsx
+│  │  │  ├─ Reports.jsx
+│  │  │  ├─ SchoolDeptManagement.jsx
+│  │  │  ├─ SystemMetricsWidget.jsx
+│  │  │  ├─ UserActivityTable.jsx
+│  │  │  └─ UserManagement.jsx
 │  │  ├─ CRC
 │  │  │  ├─ ApplicationActionModal.jsx
 │  │  │  ├─ ApplicationsTable.jsx

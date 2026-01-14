@@ -1,74 +1,71 @@
 import React from 'react';
 import { UserPlus, Building2, GraduationCap, FileDown, Plus } from 'lucide-react';
 
-const QuickActions = ({ onRegisterUser, onCreateSchool, onCreateDept, onExport }) => {
+const QuickActions = ({ onRegisterUser, onNavigate }) => {
   
   const actions = [
     {
-      label: "Register User",
+      label: "User Registry",
       icon: UserPlus,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
-      handler: onRegisterUser || (() => console.log("Register User"))
+      handler: onRegisterUser 
     },
     {
-      label: "Create School",
+      label: "Manage Schools",
       icon: Building2,
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
-      handler: onCreateSchool || (() => console.log("Create School"))
+      handler: () => onNavigate('schools') 
     },
     {
-      label: "Create Dept",
+      label: "Audit Records",
       icon: GraduationCap,
       color: "text-violet-600",
       bgColor: "bg-violet-50",
-      handler: onCreateDept || (() => console.log("Create Dept"))
+      handler: () => onNavigate('audit') 
     },
     {
-      label: "Export Report",
+      label: "System Reports",
       icon: FileDown,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
-      handler: onExport || (() => console.log("Export Report"))
+      handler: () => onNavigate('reports') 
     }
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      {/* Header aligned with the table style */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-slate-800">Quick Actions</h3>
+    /* ✅ Outer Box with rounded borders, background, and shadow to match System Health */
+    <div className="bg-white border border-slate-200 p-8 rounded-[2.5rem] shadow-sm h-full flex flex-col">
+      {/* Protocol Header */}
+      <div className="mb-6">
+        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Quick Actions</h3>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1">Protocol access gateway</p>
       </div>
 
-      {/* Grid with specific heights to prevent stretching */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4 max-w-sm">
+      {/* Action Grid */}
+      <div className="grid grid-cols-2 gap-5">
         {actions.map((action, idx) => (
           <button
             key={idx}
             onClick={action.handler}
-            className="group flex flex-col items-center justify-center p-4 h-28 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 active:scale-[0.97]"
+            className="group relative flex flex-col items-center justify-center p-6 w-full h-36 rounded-[2.5rem] border-2 border-slate-100 bg-slate-50/50 hover:bg-white hover:border-blue-400 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 active:scale-[0.95]"
           >
-            <div className={`p-3 rounded-xl ${action.bgColor} mb-3 group-hover:scale-110 transition-transform`}>
-              <action.icon className={`h-5 w-5 ${action.color}`} />
+            {/* Icon Container */}
+            <div className={`p-4 rounded-2xl ${action.bgColor} mb-4 group-hover:scale-110 transition-transform shadow-sm`}>
+              <action.icon className={`h-6 w-6 ${action.color}`} />
             </div>
-            <span className="text-xs font-bold text-slate-700 tracking-tight">
+            
+            <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest text-center leading-tight px-2">
               {action.label}
             </span>
             
-            {/* Subtle plus indicator that appears on hover */}
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-               <Plus className="h-3 w-3 text-slate-300" />
+            {/* Hover Indicator */}
+            <div className="absolute top-5 right-5 opacity-0 group-hover:opacity-100 transition-opacity">
+               <Plus className="h-4 w-4 text-blue-400" />
             </div>
           </button>
         ))}
-      </div>
-      
-      {/* Optional footer info to keep height consistent if needed */}
-      <div className="mt-auto pt-4">
-        <p className="text-[10px] text-slate-400 font-medium">
-          Note: Some actions require Super Admin privileges.
-        </p>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import StudentLogin from './pages/Student/Login';
 import StudentRegister from './pages/Student/Register';
 import StudentDashboard from './pages/Student/StudentDashboard';
 
-// --- DEPARTMENT DASHBOARDS ---
+// --- DASHBOARDS ---
 import SportsDashboard from './pages/Sports/SportsDashboard';
 import CRCDashboard from './pages/CRC/CRCDashboard';
 import AccountsDashboard from './pages/Accounts/AccountsDashboard';
@@ -18,8 +18,9 @@ import LibraryDashboard from './pages/Library/LibraryDashboard';
 import HostelsDashboard from './pages/Hostels/HostelsDashboard';
 import LabDashboard from './pages/Laboratories/LabDashboard';
 import SchoolDashboard from './pages/Schools/SchoolDashboard';
+import AdminDashboard from './pages/Admin/AdminDashboard';
 
-// --- DEPARTMENT HISTORY PAGES ---
+// --- HISTORY PAGES ---
 import SportsHistory from './pages/Sports/HistoryPage';
 import CRCHistory from './pages/CRC/HistoryPage';
 import AccountsHistory from './pages/Accounts/HistoryPage';
@@ -28,37 +29,32 @@ import HostelsHistory from './pages/Hostels/HistoryPage';
 import LaboratoriesHistory from './pages/Laboratories/HistoryPage';
 import SchoolHistory from './pages/Schools/HistoryPage';
 
-// --- ADMIN IMPORT ---
-import AdminDashboard from './pages/Admin/AdminDashboard'; // Integrated here
-
 import './App.css';
 import HomeButton from './components/common/HomeButton';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const auth = useAuth();
-  const user = auth && auth.user ? auth.user : null;
+  const { user, loading } = useAuth();
+  if (loading) return null; 
   if (!user) return <Navigate to="/login" replace />;
   return children;
 };
 
 // Student protected route
 const StudentProtectedRoute = ({ children }) => {
-  const studentCtx = useStudentAuth();
-  const student = studentCtx && studentCtx.student ? studentCtx.student : null;
+  const { student, loading } = useStudentAuth();
+  if (loading) return null;
   if (!student) return <Navigate to="/student/login" replace />;
   return children;
 };
 
 // Role Routes Helper
-const RoleRoutes = ({ role, Dashboard, PendingComponent, HistoryComponent, RejectedComponent, CreateComponent }) => (
+const RoleRoutes = ({ Dashboard, HistoryComponent, PendingComponent }) => (
   <ProtectedRoute>
     <Routes>
       <Route path="dashboard" element={<Dashboard />} />
-      <Route path="pending" element={PendingComponent ? <PendingComponent /> : <Navigate to="dashboard" replace />} />
-      <Route path="rejected" element={RejectedComponent ? <RejectedComponent /> : <Navigate to="dashboard" replace />} />
       <Route path="history" element={HistoryComponent ? <HistoryComponent /> : <Navigate to="dashboard" replace />} />
-      <Route path="create-user" element={CreateComponent ? <CreateComponent /> : <Navigate to="dashboard" replace />} />
+      <Route path="pending" element={PendingComponent ? <PendingComponent /> : <Navigate to="dashboard" replace />} />
       <Route path="*" element={<Navigate to="dashboard" replace />} />
     </Routes>
   </ProtectedRoute>
@@ -69,26 +65,29 @@ function App() {
     <AuthProvider>
       <ApplicationProvider>
         <Routes>
-          {/* Login Route */}
           <Route path="/login" element={<LoginScreen />} />
 
-          {/* --- ADMIN ROUTE INTEGRATION --- */}
-          <Route 
-            path="/admin/*" 
-            element={
-              <ProtectedRoute>
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
+          {/* Admin */}
+          <Route path="/admin/*" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
 
-          {/* Department Routes */}
-          <Route path="/sports/*" element={<RoleRoutes role="sports" Dashboard={SportsDashboard} HistoryComponent={SportsHistory} />} />
-          <Route path="/crc/*" element={<RoleRoutes role="crc" Dashboard={CRCDashboard} HistoryComponent={CRCHistory} />} />
-          <Route path="/accounts/*" element={<RoleRoutes role="accounts" Dashboard={AccountsDashboard} HistoryComponent={AccountsHistory} />} />
-          <Route path="/library/*" element={<RoleRoutes role="library" Dashboard={LibraryDashboard} HistoryComponent={LibraryHistory} />} />
-          <Route path="/hostels/*" element={<RoleRoutes role="hostels" Dashboard={HostelsDashboard} HistoryComponent={HostelsHistory} />} />
-          <Route path="/laboratories/*" element={<RoleRoutes role="laboratories" Dashboard={LabDashboard} HistoryComponent={LaboratoriesHistory} />} />
+          {/* Departments - Normalized Paths */}
+          <Route path="/sports/*" element={<RoleRoutes Dashboard={SportsDashboard} HistoryComponent={SportsHistory} />} />
+          <Route path="/crc/*" element={<RoleRoutes Dashboard={CRCDashboard} HistoryComponent={CRCHistory} />} />
+          
+          {/* Accounts Redirection Support */}
+          <Route path="/accounts/*" element={<RoleRoutes Dashboard={AccountsDashboard} HistoryComponent={AccountsHistory} />} />
+          <Route path="/account/*" element={<Navigate to="/accounts/dashboard" replace />} />
+
+          <Route path="/library/*" element={<RoleRoutes Dashboard={LibraryDashboard} HistoryComponent={LibraryHistory} />} />
+          
+          {/* Hostel Redirection Support */}
+          <Route path="/hostels/*" element={<RoleRoutes Dashboard={HostelsDashboard} HistoryComponent={HostelsHistory} />} />
+          <Route path="/hostel/*" element={<RoleRoutes Dashboard={HostelsDashboard} HistoryComponent={HostelsHistory} />} />
+          
+          {/* ✅ FIXED: Laboratory/Lab Redirection Support */}
+          <Route path="/laboratories/*" element={<RoleRoutes Dashboard={LabDashboard} HistoryComponent={LaboratoriesHistory} />} />
+          <Route path="/laboratory/*" element={<RoleRoutes Dashboard={LabDashboard} HistoryComponent={LaboratoriesHistory} />} />
+          <Route path="/lab/*" element={<RoleRoutes Dashboard={LabDashboard} HistoryComponent={LaboratoriesHistory} />} />
           
           {/* School/Dean Route */}
           <Route path="/school/*" element={

@@ -1,75 +1,102 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../components/ui/Button';
-import { FiCheck, FiInfo, FiClock, FiAlertCircle, FiXCircle } from 'react-icons/fi';
+import { 
+  FiCheck, FiInfo, FiClock, FiAlertCircle, 
+  FiXCircle, FiBookOpen, FiUser, FiHome, 
+  FiFileText, FiUploadCloud, FiMail, FiPhone, FiMapPin,
+  FiRefreshCw 
+} from 'react-icons/fi';
+
+/* -------------------------------------------------------------------------- */
+/* SUB-COMPONENTS (FIX)                            */
+/* -------------------------------------------------------------------------- */
 
 const ReadOnlyField = ({ label, value, error }) => (
-  <div>
-    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
-    <div className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-600 text-sm font-medium">
-      {value || '—'}
+  <div className="group">
+    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+      {label}
+    </label>
+    <div className="w-full px-4 py-3 bg-slate-50/80 border border-slate-100 rounded-xl text-slate-600 text-sm font-bold flex items-center gap-2 group-hover:border-slate-200 transition-all">
+      <span className="truncate">{value || '—'}</span>
     </div>
-    {error && <span className="text-xs text-rose-500 mt-1">{error}</span>}
+    {error && <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1"><FiAlertCircle size={12}/> {error}</span>}
   </div>
 );
 
 const InputRow = ({ label, name, value, onChange, type = 'text', fieldClass, editable = true, error }) => (
-  <div>
-    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
+  <div className="group">
+    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+      {label}
+    </label>
     <input 
       name={name} 
       value={value ?? ''} 
       onChange={onChange} 
       type={type}
       disabled={!editable}
-      className={`${fieldClass} ${error ? 'border-rose-300 focus:ring-rose-100 focus:border-rose-400' : ''}`} 
+      className={`${fieldClass} rounded-xl px-4 py-3 text-sm font-bold transition-all ${
+        editable ? 'bg-white border-slate-200 hover:border-blue-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500' : 'bg-slate-50 text-slate-400 border-slate-100'
+      } ${error ? 'border-rose-300 bg-rose-50/30' : ''}`} 
     />
-    {error && <span className="text-xs text-rose-500 mt-1">{error}</span>}
+    {error && <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1"><FiAlertCircle size={12}/> {error}</span>}
   </div>
 );
 
 const SelectRow = ({ label, name, value, onChange, fieldClass, editable = true, options, error }) => (
-  <div>
-    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
+  <div className="group">
+    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+      {label}
+    </label>
     <div className="relative">
       <select 
         name={name} 
         value={value ?? ''} 
         onChange={onChange} 
         disabled={!editable}
-        className={`${fieldClass} appearance-none ${error ? 'border-rose-300' : ''}`}
+        className={`${fieldClass} appearance-none rounded-xl px-4 py-3 text-sm font-bold transition-all ${
+            editable ? 'bg-white border-slate-200 hover:border-blue-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500' : 'bg-slate-50 text-slate-400 border-slate-100'
+        } ${error ? 'border-rose-300' : ''}`}
       >
         <option value="">Select Option</option>
         {options ? options.map((o, idx) => <option key={idx} value={o.v}>{o.l}</option>) : null}
       </select>
-      <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500">
+      <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
         <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
       </div>
     </div>
-    {error && <span className="text-xs text-rose-500 mt-1">{error}</span>}
+    {error && <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1"><FiAlertCircle size={12}/> {error}</span>}
   </div>
 );
+
+/* -------------------------------------------------------------------------- */
+/* MAIN COMPONENT                               */
+/* -------------------------------------------------------------------------- */
 
 const MyApplications = ({ 
   user, formData, locked, formErrors, submitting, uploading, 
   saveMessage, handleChange, handleSave, hasSubmittedApplication,
   isRejected, rejectionDetails 
 }) => {
-  const fieldClass = 'w-full px-4 py-2.5 border border-slate-200 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all text-sm text-slate-800 placeholder-slate-400 disabled:bg-slate-50 disabled:text-slate-500';
+  const fieldClass = 'w-full border outline-none transition-all';
 
-  // ✅ Show "Under Progress" message ONLY if submitted AND NOT rejected
   if (hasSubmittedApplication && !isRejected) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 sm:p-12 text-center flex flex-col items-center justify-center animate-fade-in min-h-[500px]">
-        <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-6 shadow-sm">
-          <FiClock className="w-10 h-10" />
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5 p-12 text-center flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500 min-h-[550px]">
+        <div className="relative mb-8">
+            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-2xl animate-pulse"></div>
+            <div className="relative w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-blue-500/40">
+                <FiClock className="w-10 h-10" />
+            </div>
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Your Application is Under Progress</h2>
-        <p className="text-slate-500 max-w-lg mx-auto text-lg">
-          Your application has been successfully submitted and is currently being processed by the respective departments.
+        <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight uppercase">Application Processing</h2>
+        <p className="text-slate-500 max-sm mx-auto text-base font-medium leading-relaxed">
+          Your digital clearance is currently being reviewed by the administrative heads.
         </p>
-        <div className="mt-8 p-4 bg-blue-50/50 rounded-xl border border-blue-100 max-w-md w-full">
-          <p className="text-sm text-blue-800 font-medium">
-            Please check the "Track Status" tab for real-time updates on your clearance process.
+        <div className="mt-10 px-6 py-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-4 max-w-md w-full">
+          <div className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></div>
+          <p className="text-xs text-slate-600 font-black uppercase tracking-widest">
+            Check "Track Status" for real-time updates
           </p>
         </div>
       </div>
@@ -77,47 +104,56 @@ const MyApplications = ({
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 pb-12 mt-[-50px] animate-in fade-in duration-700">
       
-      {/* 🛑 REJECTION ALERT CARD (Appears only if rejected) */}
       {isRejected && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 flex flex-col sm:flex-row gap-4 items-start shadow-sm">
-          <div className="p-3 bg-white rounded-full text-rose-600 shadow-sm flex-shrink-0">
-             <FiXCircle className="w-6 h-6" />
+        <div className="relative group overflow-hidden bg-rose-50/50 border border-rose-100 rounded-3xl p-8 flex flex-col sm:flex-row gap-6 items-start shadow-sm">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+              <FiXCircle size={120} />
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-rose-800 mb-1">Application Rejected</h3>
-            <p className="text-rose-700 text-sm mb-3">
-              Your application was rejected by <span className="font-semibold">{rejectionDetails?.role?.toUpperCase()}</span>. 
-              Please correct the details below and resubmit.
+          <div className="p-4 bg-rose-600 text-white rounded-2xl shadow-lg shadow-rose-200 flex-shrink-0">
+             <FiXCircle className="w-8 h-8" />
+          </div>
+          <div className="relative z-10">
+            <h3 className="text-xl font-black text-rose-900 mb-2 uppercase tracking-tight">Correction Required</h3>
+            <p className="text-rose-700/80 text-sm font-bold mb-4 uppercase tracking-wide">
+              Rejected by <span className="bg-rose-200/50 px-2 py-0.5 rounded text-rose-900">{rejectionDetails?.role?.toUpperCase()}</span>
             </p>
             {rejectionDetails?.remarks && (
-              <div className="bg-white/80 p-3 rounded-lg border border-rose-100 text-sm font-medium text-rose-900">
-                Remark: "{rejectionDetails.remarks}"
+              <div className="bg-white p-4 rounded-xl border border-rose-100 text-sm font-bold text-rose-800 shadow-sm italic">
+                "{rejectionDetails.remarks}"
               </div>
             )}
           </div>
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Application Form</h2>
-            <p className="text-sm text-slate-500">Please fill in all required details correctly.</p>
+      <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-slate-900/5 overflow-hidden">
+        <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                <FiFileText size={24}/>
+            </div>
+            <div>
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Application Form</h2>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Digital Clearance Registry</p>
+            </div>
           </div>
           {saveMessage && (
-            <div className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg animate-pulse">
+            <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl">
               {saveMessage}
             </div>
           )}
         </div>
         
-        <div className="p-6 sm:p-8 space-y-8">
-          {/* Academic Details */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-blue-600 mb-3">Academic Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="p-8 sm:p-10 space-y-12">
+          {/* SECTION: ACADEMIC */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+                <FiBookOpen className="text-blue-600" size={18} />
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800">Academic Details</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InputRow label="Enrollment Number" name="enrollmentNumber" value={formData.enrollmentNumber} onChange={handleChange} fieldClass={fieldClass} editable={!locked.enrollmentNumber} error={formErrors.enrollmentNumber} />
               <InputRow label="Roll Number" name="rollNumber" value={formData.rollNumber} onChange={handleChange} fieldClass={fieldClass} editable={!locked.rollNumber} error={formErrors.rollNumber} />
               <InputRow label="Admission Year" name="admissionYear" type="number" value={formData.admissionYear} onChange={handleChange} fieldClass={fieldClass} editable={!locked.admissionYear} error={formErrors.admissionYear} />
@@ -136,14 +172,15 @@ const MyApplications = ({
                 options={[{ v: 'Regular', l: 'Regular' }, { v: 'Lateral Entry', l: 'Lateral Entry' }, { v: 'Transfer', l: 'Transfer' }]} 
               />
             </div>
-          </div>
+          </section>
 
-          <hr className="border-slate-100" />
-
-          {/* Personal Information */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-blue-600 mb-3">Personal Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* SECTION: PERSONAL */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+                <FiUser className="text-blue-600" size={18} />
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800">Personal Information</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <ReadOnlyField label="Full Name" value={formData.fullName || user?.full_name} error={formErrors.fullName} />
               <ReadOnlyField label="Email Address" value={formData.email || user?.email} error={formErrors.email} />
               <ReadOnlyField label="Mobile Number" value={formData.mobile || user?.mobile_number} error={formErrors.mobile} />
@@ -173,25 +210,28 @@ const MyApplications = ({
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Permanent Address</label>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Permanent Address</label>
                 <textarea 
                   name="permanentAddress" 
                   value={formData.permanentAddress ?? ''} 
                   onChange={handleChange} 
                   disabled={locked.permanentAddress}
                   rows="3" 
-                  className={`${fieldClass} resize-none ${formErrors.permanentAddress ? 'border-rose-300' : ''}`} 
+                  className={`w-full rounded-xl px-4 py-3 text-sm font-bold border outline-none transition-all resize-none ${
+                    !locked.permanentAddress ? 'bg-white border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10' : 'bg-slate-50 text-slate-400 border-slate-100'
+                  } ${formErrors.permanentAddress ? 'border-rose-300' : ''}`} 
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          <hr className="border-slate-100" />
-
-          {/* Hostel & Documents */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-blue-600 mb-3">Additional Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* SECTION: LOGISTICS */}
+          <section className="space-y-6">
+            <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
+                <FiHome className="text-blue-600" size={18} />
+                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800">Additional Details</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SelectRow 
                 label="Are you a Hosteller?" 
                 name="isHosteller" 
@@ -209,56 +249,68 @@ const MyApplications = ({
                 </>
               )}
               
-              <div className="md:col-span-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">No Dues Proof (PDF)</label>
-                <div className="flex items-center gap-4">
-                  <input 
-                    type="file" 
-                    name="proof_document_url" 
-                    accept="application/pdf" 
-                    onChange={handleChange}
-                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-all"
-                  />
+              <div className="md:col-span-2 bg-blue-50/30 p-8 rounded-3xl border border-blue-100/50">
+                <label className="block text-xs font-black text-blue-900 uppercase tracking-widest mb-4">Verification Document (PDF)</label>
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                  <div className="relative group cursor-pointer">
+                    <input 
+                      type="file" 
+                      name="proof_document_url" 
+                      accept="application/pdf" 
+                      onChange={handleChange}
+                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 group-hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                      <FiUploadCloud size={16} /> {uploading ? 'Uploading...' : 'Choose PDF File'}
+                    </div>
+                  </div>
+                  
                   {formData.proof_document_url && (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-emerald-100">
-                      <FiCheck className="text-base text-emerald-600" />
-                      <span className="text-xs font-medium text-emerald-700 truncate max-w-[200px]">File Uploaded</span>
+                    <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-emerald-50 border border-emerald-100 animate-in slide-in-from-left-2">
+                      <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                        <FiCheck size={14} />
+                      </div>
+                      <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Document Secured</span>
                     </div>
                   )}
                 </div>
-                {uploading && <div className="text-xs text-blue-500 animate-pulse mt-1">Uploading document... please wait.</div>}
-                {formErrors.proof_document_url && <div className="text-xs text-rose-500 mt-1">{formErrors.proof_document_url}</div>}
-                <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
-                  <FiInfo /> Upload "No Dues" form or required proof in PDF.
-                </p>
+                {formErrors.proof_document_url && <div className="text-[10px] font-bold text-rose-500 mt-3 flex items-center gap-1"><FiAlertCircle size={12}/> {formErrors.proof_document_url}</div>}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">Remarks (Optional)</label>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Remarks (Optional)</label>
                 <textarea 
                   name="remarks" 
                   value={formData.remarks ?? ''} 
                   onChange={handleChange} 
                   rows="2" 
-                  placeholder="Any additional information..."
-                  className={`${fieldClass} resize-none`} 
+                  placeholder="Provide additional context..."
+                  className="w-full rounded-xl px-4 py-3 text-sm font-bold border border-slate-200 bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all resize-none" 
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
+          <div className="pt-10 flex flex-col sm:flex-row items-center justify-between border-t border-slate-50 gap-6">
+            <div className="flex items-center gap-3 text-slate-400">
+                <FiInfo size={20} />
+                <p className="text-xs font-medium max-w-xs">By submitting, you confirm that all provided data is true to the university records.</p>
+            </div>
             <Button 
               variant="primary" 
               onClick={handleSave} 
-              className={`w-full sm:w-auto px-8 py-3 text-white rounded-xl shadow-lg transition-all ${
+              className={`w-full sm:w-auto px-12 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-white rounded-2xl shadow-2xl transition-all active:scale-95 ${
                 isRejected 
                   ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200' 
-                  : 'bg-blue-600 hover:bg-blue-700 shadow-blue-200'
+                  : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'
               }`}
               disabled={submitting || uploading}
             >
-              {submitting ? 'Processing...' : (isRejected ? 'Resubmit Application' : 'Save & Update')}
+              {submitting ? (
+                <div className="flex items-center gap-2">
+                    <FiRefreshCw className="animate-spin" /> Processing
+                </div>
+              ) : (isRejected ? 'Resubmit Application' : 'Finalize & Update')}
             </Button>
           </div>
         </div>
