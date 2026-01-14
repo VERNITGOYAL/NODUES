@@ -1,122 +1,128 @@
-import React, { useState, useEffect } from 'react';
-import { X, Building2, User, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Landmark, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 const CreateSchoolModal = ({ isOpen, onClose, onSuccess }) => {
+  const { authFetch } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState(null);
+
   const [formData, setFormData] = useState({
     name: '',
-    deanName: '',
+    code: ''
   });
-
-  // Reset form when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setFormData({ name: '', deanName: '' });
-    }
-  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // Simulate API Call (POST /api/admin/schools)
-    setTimeout(() => {
-      console.log("Creating School:", formData);
+    try {
+      const response = await authFetch('/api/admin/schools', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: formData.name,
+          code: formData.code.toUpperCase() // Ensure codes are uppercase
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || 'Failed to create school');
+      }
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        onSuccess?.();
+        onClose();
+        setFormData({ name: '', code: '' }); // Reset form
+      }, 1500);
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
       setIsLoading(false);
-      onSuccess?.(); // Trigger refresh in parent
-      onClose();
-    }, 1500);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-      
-      {/* Modal Content */}
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-2 text-slate-800">
-            <div className="p-2 bg-indigo-100 rounded-lg">
-              <Building2 className="h-5 w-5 text-indigo-600" />
-            </div>
-            <h3 className="font-semibold text-lg">Create New School</h3>
-          </div>
-          <button 
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1 rounded-full transition-colors"
-          >
+        <div className="relative px-6 py-8 text-center bg-slate-50/50 border-b border-slate-100">
+          <button onClick={onClose} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-all">
             <X className="h-5 w-5" />
           </button>
+          <div className="inline-flex p-3 bg-indigo-100 rounded-2xl mb-4 shadow-inner">
+            <Landmark className="h-6 w-6 text-indigo-600" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 tracking-tight">Add Academic School</h3>
+          <p className="text-xs text-slate-500 mt-1">Register a new school entity into the university database.</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          
-          {/* School Name */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">
-              School Name <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                required
-                placeholder="e.g. School of Engineering"
-                className="w-full pl-3 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-              />
+        {showSuccess ? (
+          <div className="p-12 text-center animate-in fade-in scale-in">
+            <div className="h-16 w-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600">
+               <CheckCircle2 className="h-8 w-8" />
             </div>
-            <p className="text-xs text-slate-500">The full official name of the school.</p>
+            <h3 className="text-xl font-bold text-slate-800 tracking-tight">School Created Successfully</h3>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            {error && (
+              <div className="p-3 bg-red-50 text-red-600 text-[10px] rounded-xl flex items-center gap-2 border border-red-100 font-bold uppercase tracking-wide">
+                <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+              </div>
+            )}
 
-          {/* Dean Name */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700">
-              Dean Name <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                required
-                placeholder="e.g. Dr. Jane Smith"
-                className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-                value={formData.deanName}
-                onChange={(e) => setFormData({...formData, deanName: e.target.value})}
-              />
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Official Name</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. School of Information & Communication Technology" 
+                  required 
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">School Code</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. SOICT" 
+                  required 
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-mono"
+                  value={formData.code}
+                  onChange={(e) => setFormData({...formData, code: e.target.value})}
+                />
+              </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create School'
-              )}
-            </button>
-          </div>
-
-        </form>
+            <div className="flex gap-3 pt-4">
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="flex-1 px-4 py-3.5 border border-slate-200 rounded-2xl font-bold text-xs text-slate-500 hover:bg-slate-50 transition-all uppercase tracking-wider"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                disabled={isLoading}
+                className="flex-[1.5] px-4 py-3.5 bg-indigo-600 text-white rounded-2xl font-bold text-xs hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg shadow-indigo-100"
+              >
+                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Register School'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

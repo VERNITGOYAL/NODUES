@@ -415,11 +415,11 @@ const TrackStatus = () => {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-fade-in overflow-hidden flex flex-col">
+    <div className="bg-white mt-[-50px] rounded-2xl border border-slate-200 shadow-sm animate-fade-in overflow-hidden flex flex-col">
       <SvgDefinitions />
       
       {/* HEADER */}
-      <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
         <div>
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-widest mb-2 border border-indigo-100">
             <Zap size={12} className="fill-current" /> Live Workflow

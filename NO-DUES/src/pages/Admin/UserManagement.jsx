@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Search, UserPlus, Filter, MoreVertical, Edit2, 
-  Trash2, Shield, Mail, Loader2, RefreshCw,
-  ChevronLeft, ChevronRight
+  Trash2, Shield, Mail, Loader2, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import RegisterUserModal from './RegisterUserModal';
@@ -15,14 +14,13 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   
-  // Modal & Selection States
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null); 
   const [deletingUser, setDeletingUser] = useState(null); 
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [activeActionId, setActiveActionId] = useState(null);
 
-  // ✅ Mapping for Schools (Academic)
+  // Mapping for Schools
   const getSchoolCode = (id) => {
     const schools = { 
       1: "SOICT", 2: "SOM", 3: "SOE", 
@@ -31,15 +29,11 @@ const UserManagement = () => {
     return schools[id] || null;
   };
 
-  // ✅ Mapping for Departments (Authority Phases)
+  // Mapping for Departments
   const getDeptName = (id) => {
     const departments = {
-      1: "Library",
-      2: "Hostel",
-      3: "Sports",
-      4: "Laboratories",
-      5: "CRC",
-      6: "Accounts"
+      1: "Library", 2: "Hostel", 3: "Sports",
+      4: "Laboratories", 5: "CRC", 6: "Accounts"
     };
     return departments[id] || null;
   };
@@ -77,7 +71,6 @@ const UserManagement = () => {
       const response = await authFetch(`/api/admin/users/${deletingUser.id}`, {
         method: 'DELETE',
       });
-
       if (response.ok) {
         setUsers(prev => prev.filter(u => u.id !== deletingUser.id));
         setDeletingUser(null);
@@ -113,48 +106,51 @@ const UserManagement = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 h-full flex flex-col">
-      {/* Header Area */}
+      {/* ✅ NEW Header Area with Title */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <p className="text-slate-500 text-sm mt-1">Manage system access for {users.length} users.</p>
+          <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">User Management</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Maintain and audit university staff, student, and authority accounts.
+          </p>
         </div>
         <div className="flex gap-2">
-           <button onClick={fetchUsers} className="p-2.5 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all shadow-sm">
+           <button onClick={fetchUsers} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all shadow-sm active:scale-95">
               <RefreshCw className={`h-4 w-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
            </button>
            <button 
             onClick={() => { setEditingUser(null); setIsRegisterModalOpen(true); }} 
-            className="flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-all shadow-md"
+            className="flex items-center px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg active:scale-95"
            >
-             <UserPlus className="h-4 w-4 mr-2" /> Register New User
+             <UserPlus className="h-4 w-4 mr-2" /> Register User
            </button>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+      <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
           <input 
             type="text" 
-            placeholder="Search by name or email..." 
-            className="w-full pl-10 pr-4 py-3 bg-slate-50/50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            placeholder="Search by full name or institutional email..." 
+            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
             value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="relative min-w-[200px]">
-          <Filter className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
+        <div className="relative min-w-[220px]">
+          <Filter className="absolute left-4 top-3.5 h-4 w-4 text-slate-400 pointer-events-none" />
           <select 
-            className="w-full pl-10 pr-8 py-3 border border-slate-200 rounded-xl text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none appearance-none font-bold text-slate-600 uppercase tracking-tight"
+            className="w-full pl-11 pr-8 py-3.5 border border-slate-200 rounded-2xl text-xs bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none appearance-none font-black text-slate-600 uppercase tracking-widest cursor-pointer"
             value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}
           >
-            <option value="">All Roles</option>
-            <optgroup label="System">
-                <option value="admin">Admin</option>
-                <option value="student">Student</option>
+            <option value="">All Account Roles</option>
+            <optgroup label="Core System">
                 <option value="super_admin">Super Admin</option>
+                <option value="admin">Administrator</option>
+                <option value="student">Student</option>
             </optgroup>
-            <optgroup label="Authorities">
+            <optgroup label="Departmental Authorities">
                 <option value="dean">Dean</option>
                 <option value="library">Library</option>
                 <option value="hostel">Hostel</option>
@@ -168,82 +164,82 @@ const UserManagement = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col">
         <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50/50 text-slate-400 font-bold text-[10px] uppercase tracking-widest border-b border-slate-100">
               <tr>
-                <th className="px-6 py-4">Identification</th>
-                <th className="px-6 py-4">System Role</th>
-                <th className="px-6 py-4">Allocation</th>
-                <th className="px-6 py-4 text-right">Actions</th>
+                <th className="px-8 py-5">Identification</th>
+                <th className="px-6 py-5">Role Assigned</th>
+                <th className="px-6 py-5">Unit Allocation</th>
+                <th className="px-8 py-5 text-right">Settings</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
                   <td colSpan="4" className="px-6 py-24 text-center">
-                    <Loader2 className="h-10 w-10 animate-spin text-blue-500 mx-auto" />
-                    <p className="text-slate-400 mt-4 font-bold uppercase text-[10px] tracking-widest">Accessing Database...</p>
+                    <Loader2 className="h-10 w-10 animate-spin text-slate-300 mx-auto" />
+                    <p className="text-slate-400 mt-4 font-bold uppercase text-[10px] tracking-widest">Building Table Structure...</p>
                   </td>
                 </tr>
               ) : filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50/40 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 border border-white shadow-sm">
+                <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
+                  <td className="px-8 py-4">
+                    <div className="flex items-center gap-4">
+                      <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 flex items-center justify-center text-sm font-black text-slate-600 shadow-sm group-hover:scale-110 transition-transform">
                         {user.name?.charAt(0)}
                       </div>
                       <div>
-                        <div className="font-bold text-slate-800">{user.name}</div>
-                        <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                        <div className="font-bold text-slate-800 tracking-tight">{user.name}</div>
+                        <div className="text-[11px] text-slate-400 font-bold flex items-center gap-1 mt-0.5">
                           <Mail className="h-3 w-3" /> {user.email}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm ${getRoleStyle(user.role)}`}>
-                      <Shield className="h-3 w-3 mr-1.5 opacity-70" /> {user.role?.replace('_', ' ')}
+                    <span className={`inline-flex px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] border shadow-sm ${getRoleStyle(user.role)}`}>
+                      <Shield className="h-3 w-3 mr-2 opacity-70" /> {user.role?.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-slate-600">
+                  <td className="px-6 py-4">
                     <div className="flex flex-col">
                        <span className="font-bold text-slate-700 tracking-tight">
-                         {/* ✅ Logic: Show School Code or Department Name */}
-                         {user.school_id ? getSchoolCode(user.school_id) : (getDeptName(user.department_id) || user.department_name || 'N/A')}
+                         {user.school_id ? getSchoolCode(user.school_id) : (getDeptName(user.department_id) || user.department_name || 'System Level')}
                        </span>
-                       <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
-                         {user.school_id ? 'Academic School' : 'Department/Authority'}
+                       <span className="text-[9px] text-slate-400 font-black uppercase tracking-tighter">
+                         {user.school_id ? 'Academic School' : (user.department_id ? 'Central Authority' : 'Global')}
                        </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right relative">
+                  <td className="px-8 py-4 text-right">
                     <button 
                       onClick={() => setActiveActionId(activeActionId === user.id ? null : user.id)}
-                      className="text-slate-300 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-all"
+                      className="text-slate-300 hover:text-slate-900 p-2 rounded-2xl hover:bg-slate-100 transition-all active:scale-95"
                     >
                       <MoreVertical className="h-5 w-5" />
                     </button>
 
                     {activeActionId === user.id && (
-                      <>
+                      <div className="relative">
                         <div className="fixed inset-0 z-20" onClick={() => setActiveActionId(null)} />
-                        <div className="absolute right-6 top-12 w-36 bg-white border border-slate-200 rounded-xl shadow-xl z-30 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                        <div className="absolute right-0 top-2 w-44 bg-white border border-slate-100 rounded-2xl shadow-2xl z-30 overflow-hidden py-2 animate-in fade-in zoom-in-95 duration-150">
                           <button 
                             onClick={() => handleEditUser(user)}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-colors"
                           >
-                            <Edit2 className="h-3.5 w-3.5" /> Edit Profile
+                            <Edit2 className="h-4 w-4 text-blue-500" /> Edit User
                           </button>
+                          <div className="h-px bg-slate-50 my-1 mx-2" />
                           <button 
                             onClick={() => setDeletingUser({ id: user.id, name: user.name })}
-                            className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 transition-colors"
                           >
-                            <Trash2 className="h-3.5 w-3.5" /> Remove User
+                            <Trash2 className="h-4 w-4" /> Remove User
                           </button>
                         </div>
-                      </>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -253,7 +249,7 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* ✅ MODALS */}
+      {/* ✅ Modals */}
       <RegisterUserModal 
         isOpen={isRegisterModalOpen} 
         onClose={() => { setIsRegisterModalOpen(false); setEditingUser(null); }} 

@@ -1,147 +1,121 @@
-// AuthContext.jsx
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext();
-
-export const useAuth = () => {
-  return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper to build API URLs consistently
+  const getApiBase = useCallback(() => {
+    const base = import.meta.env.VITE_API_BASE || '';
+    return base.replace(/\/+$/g, '');
+  }, []);
+
+  // Sync state with localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    if (storedToken) {
-      setToken(storedToken);
+    if (storedUser && storedToken) {
+      try {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+      } catch (e) {
+        console.error("AuthContext: Session recovery failed", e);
+        localStorage.clear();
+      }
     }
     setLoading(false);
   }, []);
 
-  const login = async (credentials) => {
-    const { email, password } = credentials || {};
-
-    const API_BASE = import.meta.env.VITE_API_BASE || '';
-    const loginUrl = API_BASE ? `${API_BASE}/api/admin/login` : `/api/admin/login`;
+  /**
+   * ✅ UPDATED LOGIN LOGIC (Same as Student)
+   * Accepts: { email, password, captcha_input, captcha_hash }
+   * Uses Stateless Verification to avoid "Captcha Expired" cookie issues.
+   */
+  const login = async (credentialsPayload) => {
+    const loginUrl = `${getApiBase()}/api/admin/login`; 
 
     try {
       const res = await fetch(loginUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        // credentials: 'include' is kept for security best practices, 
+        // but we now primarily rely on the captcha_hash in the body.
+        credentials: 'include', 
+        body: JSON.stringify(credentialsPayload)
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        let errMsg = 'Login failed';
-        try {
-          const errJson = await res.json();
-          errMsg = errJson.message || errJson.detail || errMsg;
-        } catch (e) {}
-        throw new Error(errMsg || res.statusText);
-      }
-
-      const data = await res.json();
-      const userData = data.user || { id: data.id || Math.floor(Math.random() * 1000), email: email, name: data.name || email, role: data.role || 'Admin' };
-      const receivedToken = data.token || data.access_token || null;
-
-      // Persist immediate values
-      setUser(userData);
-      if (receivedToken) setToken(receivedToken);
-
-      localStorage.setItem('user', JSON.stringify(userData));
-      if (receivedToken) localStorage.setItem('token', receivedToken);
-
-      // If we have a token, attempt to fetch authoritative profile info
-      // Try common profile endpoints so we can discover role/department
-      if (receivedToken) {
-        try {
-          const API_BASE = import.meta.env.VITE_API_BASE || '';
-          const tryUrls = ['/api/users/me', '/api/admin/me', '/api/profile', '/api/me'];
-          let profile = null;
-          for (const p of tryUrls) {
-            const url = API_BASE ? `${API_BASE}${p}` : p;
-            try {
-              const profRes = await fetch(url, {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${receivedToken}`
-                }
-              });
-              if (!profRes.ok) continue;
-              const profJson = await profRes.json();
-              // Backends may return { user: {...} } or direct user object
-              profile = profJson.user || profJson;
-              if (profile) break;
-            } catch (e) {
-              // ignore and try next
-            }
-          }
-
-          if (profile) {
-            setUser(profile);
-            localStorage.setItem('user', JSON.stringify(profile));
-            return { user: profile, token: receivedToken };
-          }
-        } catch (e) {
-          // ignore profile fetch errors and fall back to token-provided userData
+        // Robust error parsing for FastAPI structured errors
+        let errorMessage = 'Login failed';
+        if (data.detail) {
+          errorMessage = Array.isArray(data.detail) 
+            ? data.detail[0].msg 
+            : data.detail;
         }
+        throw new Error(errorMessage);
       }
+
+      // Map backend response to local user object
+      const receivedToken = data.access_token || data.token;
+      const userData = {
+        id: data.user_id,
+        name: data.user_name,
+        role: data.user_role?.toLowerCase(),
+        school: data.school_name,
+        department: data.department_name,
+        ...data
+      };
+
+      // Persist to storage
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', receivedToken);
+      
+      setUser(userData);
+      setToken(receivedToken);
 
       return { user: userData, token: receivedToken };
     } catch (err) {
-      // Propagate errors to the caller so the UI can show backend messages
-      // (Do not fall back to a mock user on invalid credentials.)
-      console.warn('Login error:', err?.message || err);
+      console.error("AuthContext Login Error:", err.message);
       throw err;
     }
   };
 
-  // No admin register endpoint; do not implement register for admin
-  const register = async () => {
-    throw new Error('Admin registration is not supported.');
-  };
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  }, []);
 
-  // ✅ LOGOUT FIX CONFIRMED: This function correctly destroys the session
-  const logout = () => {
-    setUser(null); // Clears the in-memory user state
-    setToken(null); // Clears the in-memory token state
-    localStorage.removeItem('user'); // Removes the persistent user data
-    localStorage.removeItem('token'); // Removes the persistent token
-    // Once state is null, ProtectedRoute automatically redirects to /login.
-  };
-
-  // Helper for authenticated fetches
-  const authFetch = (url, options = {}) => {
-    const API_BASE = import.meta.env.VITE_API_BASE || '';
-    const fullUrl = url.startsWith('http') || url.startsWith('/') ? (API_BASE && url.startsWith('/') ? `${API_BASE}${url}` : url) : (API_BASE ? `${API_BASE}/${url}` : url);
-    const headers = { ...(options.headers || {}) };
-    if (!headers['Content-Type'] && !headers['content-type']) {
-      headers['Content-Type'] = 'application/json';
-    }
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    return fetch(fullUrl, { ...options, headers });
-  };
-
-
-  const value = {
-    user,
-    token,
-    login,
-    register,
-    logout,
-    authFetch,
-    loading
-  };
+  /**
+   * ✅ AUTHORIZED FETCH
+   * Automatically attaches JWT Bearer token to requests
+   */
+  const authFetch = useCallback((url, options = {}) => {
+    const activeToken = token || localStorage.getItem('token');
+    const fullUrl = url.startsWith('http') ? url : `${getApiBase()}${url}`;
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+      'Authorization': `Bearer ${activeToken}`
+    };
+    
+    return fetch(fullUrl, { ...options, headers, credentials: 'include' });
+  }, [token, getApiBase]);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, token, login, logout, authFetch, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

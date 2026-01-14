@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
-import Header from '../../components/common/Header';
 import Sidebar from '../../components/common/Sidebar';
 
 // Child Components
@@ -155,7 +154,7 @@ const SchoolDashboard = () => {
     <div className="flex h-screen bg-gray-100 font-sans">
       <Sidebar user={user} logout={logout} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header user={user} />
+       
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <motion.div initial="hidden" animate="visible" variants={containerVariants}>
             <motion.div variants={itemVariants}>

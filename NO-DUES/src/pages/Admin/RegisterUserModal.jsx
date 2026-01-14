@@ -168,10 +168,8 @@ const RegisterUserModal = ({ isOpen, onClose, onSuccess, initialData }) => {
                     onChange={(e) => setFormData({...formData, role: e.target.value, school_id: '', department_id: ''})}
                   >
                     <optgroup label="System Roles">
-                      <option value="student">Student</option>
                       <option value="admin">Admin</option>
                       <option value="super_admin">Super Admin</option>
-                      <option value="staff">Staff</option>
                     </optgroup>
                     <optgroup label="Academic Authority">
                       <option value="dean">Dean</option>
