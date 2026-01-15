@@ -1,14 +1,36 @@
 import React, { useState } from 'react';
-import { Button } from '../../components/ui/Button';
 import { 
   FiCheck, FiInfo, FiClock, FiAlertCircle, 
   FiXCircle, FiBookOpen, FiUser, FiHome, 
   FiFileText, FiUploadCloud, FiRefreshCw, FiCheckCircle, FiDownload 
 } from 'react-icons/fi';
 
-/* -------------------------------------------------------------------------- */
-/* SUB-COMPONENTS                                                             */
-/* -------------------------------------------------------------------------- */
+// --- INTEGRATED UI UTILITIES ---
+const cn = (...classes) => classes.filter(Boolean).join(" ");
+
+// --- INTEGRATED UI COMPONENTS ---
+
+const Button = React.forwardRef(({ className, variant = "primary", disabled, children, ...props }, ref) => {
+  const baseStyles = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 active:scale-95";
+  
+  const variants = {
+    primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/30",
+    success: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-xl shadow-emerald-200",
+    danger: "bg-rose-600 text-white hover:bg-rose-700 shadow-rose-200",
+    outline: "border border-slate-200 bg-transparent hover:bg-slate-50 text-slate-600"
+  };
+
+  return (
+    <button
+      ref={ref}
+      disabled={disabled}
+      className={cn(baseStyles, variants[variant], className)}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+});
 
 const ReadOnlyField = ({ label, value, error }) => (
   <div className="group">
@@ -18,11 +40,15 @@ const ReadOnlyField = ({ label, value, error }) => (
     <div className="w-full px-4 py-3 bg-slate-50/80 border border-slate-100 rounded-xl text-slate-600 text-sm font-bold flex items-center gap-2 group-hover:border-slate-200 transition-all">
       <span className="truncate">{value || '—'}</span>
     </div>
-    {error && <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1"><FiAlertCircle size={12}/> {error}</span>}
+    {error && (
+      <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1">
+        <FiAlertCircle size={12}/> {error}
+      </span>
+    )}
   </div>
 );
 
-const InputRow = ({ label, name, value, onChange, type = 'text', fieldClass, editable = true, error }) => (
+const InputRow = ({ label, name, value, onChange, type = 'text', editable = true, error }) => (
   <div className="group">
     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
       {label}
@@ -33,15 +59,23 @@ const InputRow = ({ label, name, value, onChange, type = 'text', fieldClass, edi
       onChange={onChange} 
       type={type}
       disabled={!editable}
-      className={`${fieldClass} rounded-xl px-4 py-3 text-sm font-bold transition-all ${
-        editable ? 'bg-white border-slate-200 hover:border-blue-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500' : 'bg-slate-50 text-slate-400 border-slate-100'
-      } ${error ? 'border-rose-300 bg-rose-50/30' : ''}`} 
+      className={cn(
+        "w-full rounded-xl px-4 py-3 text-sm font-bold border outline-none transition-all",
+        editable 
+          ? "bg-white border-slate-200 hover:border-blue-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500" 
+          : "bg-slate-50 text-slate-400 border-slate-100",
+        error ? "border-rose-300 bg-rose-50/30" : ""
+      )}
     />
-    {error && <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1"><FiAlertCircle size={12}/> {error}</span>}
+    {error && (
+      <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1">
+        <FiAlertCircle size={12}/> {error}
+      </span>
+    )}
   </div>
 );
 
-const SelectRow = ({ label, name, value, onChange, fieldClass, editable = true, options, error }) => (
+const SelectRow = ({ label, name, value, onChange, editable = true, options, error }) => (
   <div className="group">
     <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
       {label}
@@ -52,18 +86,28 @@ const SelectRow = ({ label, name, value, onChange, fieldClass, editable = true, 
         value={value ?? ''} 
         onChange={onChange} 
         disabled={!editable}
-        className={`${fieldClass} appearance-none rounded-xl px-4 py-3 text-sm font-bold transition-all ${
-            editable ? 'bg-white border-slate-200 hover:border-blue-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500' : 'bg-slate-50 text-slate-400 border-slate-100'
-        } ${error ? 'border-rose-300' : ''}`}
+        className={cn(
+            "w-full appearance-none rounded-xl px-4 py-3 text-sm font-bold border outline-none transition-all",
+            editable 
+              ? "bg-white border-slate-200 hover:border-blue-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500" 
+              : "bg-slate-50 text-slate-400 border-slate-100",
+            error ? "border-rose-300" : ""
+        )}
       >
         <option value="">Select Option</option>
         {options ? options.map((o, idx) => <option key={idx} value={o.v}>{o.l}</option>) : null}
       </select>
       <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-400">
-        <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+        <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+          <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+        </svg>
       </div>
     </div>
-    {error && <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1"><FiAlertCircle size={12}/> {error}</span>}
+    {error && (
+      <span className="text-[10px] font-bold text-rose-500 mt-1.5 ml-1 flex items-center gap-1">
+        <FiAlertCircle size={12}/> {error}
+      </span>
+    )}
   </div>
 );
 
@@ -79,27 +123,20 @@ const MyApplications = ({
 }) => {
   const [certDownloading, setCertDownloading] = useState(false);
   const [localFileError, setLocalFileError] = useState(''); 
-  const fieldClass = 'w-full border outline-none transition-all';
 
   const isFullyCleared = isCompleted || (stepStatuses?.length > 0 && stepStatuses?.every(s => s.status === 'completed'));
 
-  // ✅ ENHANCED FILE HANDLER
   const onFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const maxSize = 5 * 1024 * 1024; // 5MB
-    
     if (file.size > maxSize) {
       setLocalFileError(`File too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Max 5MB.`);
-      e.target.value = null; // Reset input
+      e.target.value = null; 
       return;
     }
-
     setLocalFileError('');
-    
-    // Pass the event to the parent.
-    // NOTE: The parent (StudentDashboard) MUST handle the API call and use "file" as the key.
     handleChange(e); 
   };
 
@@ -147,12 +184,12 @@ const MyApplications = ({
           <Button 
             onClick={handleDownloadCertificate}
             disabled={certDownloading}
-            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-emerald-200 transition-all flex items-center justify-center gap-3"
+            variant="success"
+            className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em]"
           >
             {certDownloading ? <FiRefreshCw className="animate-spin" /> : <FiDownload size={18} />}
             Download Certificate
           </Button>
-          
           <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
             Registry Archive Reference: {applicationId?.slice(0, 8)}
           </p>
@@ -228,34 +265,23 @@ const MyApplications = ({
         </div>
         
         <div className="p-8 sm:p-10 space-y-12">
-          {/* SECTION: ACADEMIC */}
           <section className="space-y-6">
             <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
                 <FiBookOpen className="text-blue-600" size={18} />
                 <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800">Academic Details</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InputRow label="Enrollment Number" name="enrollmentNumber" value={formData.enrollmentNumber} onChange={handleChange} fieldClass={fieldClass} editable={!locked.enrollmentNumber} error={formErrors.enrollmentNumber} />
-              <InputRow label="Roll Number" name="rollNumber" value={formData.rollNumber} onChange={handleChange} fieldClass={fieldClass} editable={!locked.rollNumber} error={formErrors.rollNumber} />
-              <InputRow label="Admission Year" name="admissionYear" type="number" value={formData.admissionYear} onChange={handleChange} fieldClass={fieldClass} editable={!locked.admissionYear} error={formErrors.admissionYear} />
+              <InputRow label="Enrollment Number" name="enrollmentNumber" value={formData.enrollmentNumber} onChange={handleChange} editable={!locked.enrollmentNumber} error={formErrors.enrollmentNumber} />
+              <InputRow label="Roll Number" name="rollNumber" value={formData.rollNumber} onChange={handleChange} editable={!locked.rollNumber} error={formErrors.rollNumber} />
+              <InputRow label="Admission Year" name="admissionYear" type="number" value={formData.admissionYear} onChange={handleChange} editable={!locked.admissionYear} error={formErrors.admissionYear} />
               <div className="grid grid-cols-2 gap-4">
-                <InputRow label="Batch" name="batch" value={formData.batch} onChange={handleChange} fieldClass={fieldClass} editable={!locked.batch} error={formErrors.batch} />
-                <InputRow label="Section" name="section" value={formData.section} onChange={handleChange} fieldClass={fieldClass} editable={!locked.section} error={formErrors.section} />
+                <InputRow label="Batch" name="batch" value={formData.batch} onChange={handleChange} editable={!locked.batch} error={formErrors.batch} />
+                <InputRow label="Section" name="section" value={formData.section} onChange={handleChange} editable={!locked.section} error={formErrors.section} />
               </div>
-              <SelectRow 
-                label="Admission Type" 
-                name="admissionType" 
-                value={formData.admissionType} 
-                onChange={handleChange} 
-                fieldClass={fieldClass} 
-                editable={!locked.admissionType} 
-                error={formErrors.admissionType} 
-                options={[{ v: 'Regular', l: 'Regular' }, { v: 'Lateral Entry', l: 'Lateral Entry' }, { v: 'Transfer', l: 'Transfer' }]} 
-              />
+              <SelectRow label="Admission Type" name="admissionType" value={formData.admissionType} onChange={handleChange} editable={!locked.admissionType} error={formErrors.admissionType} options={[{ v: 'Regular', l: 'Regular' }, { v: 'Lateral Entry', l: 'Lateral Entry' }, { v: 'Transfer', l: 'Transfer' }]} />
             </div>
           </section>
 
-          {/* SECTION: PERSONAL */}
           <section className="space-y-6">
             <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
                 <FiUser className="text-blue-600" size={18} />
@@ -265,12 +291,12 @@ const MyApplications = ({
               <ReadOnlyField label="Full Name" value={formData.fullName || user?.full_name} error={formErrors.fullName} />
               <ReadOnlyField label="Email Address" value={formData.email || user?.email} error={formErrors.email} />
               <ReadOnlyField label="Mobile Number" value={formData.mobile || user?.mobile_number} error={formErrors.mobile} />
-              <InputRow label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} fieldClass={fieldClass} editable={!locked.dob} error={formErrors.dob} />
-              <InputRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} fieldClass={fieldClass} editable={!locked.fatherName} error={formErrors.fatherName} />
-              <InputRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} fieldClass={fieldClass} editable={!locked.motherName} error={formErrors.motherName} />
+              <InputRow label="Date of Birth" name="dob" type="date" value={formData.dob} onChange={handleChange} editable={!locked.dob} error={formErrors.dob} />
+              <InputRow label="Father's Name" name="fatherName" value={formData.fatherName} onChange={handleChange} editable={!locked.fatherName} error={formErrors.fatherName} />
+              <InputRow label="Mother's Name" name="motherName" value={formData.motherName} onChange={handleChange} editable={!locked.motherName} error={formErrors.motherName} />
               <div className="grid grid-cols-2 gap-4">
-                <SelectRow label="Gender" name="gender" value={formData.gender} onChange={handleChange} fieldClass={fieldClass} editable={!locked.gender} error={formErrors.gender} options={[{ v: 'Male', l: 'Male' }, { v: 'Female', l: 'Female' }, { v: 'Other', l: 'Other' }]} />
-                <SelectRow label="Category" name="category" value={formData.category} onChange={handleChange} fieldClass={fieldClass} editable={!locked.category} error={formErrors.category} options={['GEN', 'OBC', 'SC', 'ST'].map(c => ({ v: c, l: c }))} />
+                <SelectRow label="Gender" name="gender" value={formData.gender} onChange={handleChange} editable={!locked.gender} error={formErrors.gender} options={[{ v: 'Male', l: 'Male' }, { v: 'Female', l: 'Female' }, { v: 'Other', l: 'Other' }]} />
+                <SelectRow label="Category" name="category" value={formData.category} onChange={handleChange} editable={!locked.category} error={formErrors.category} options={['GEN', 'OBC', 'SC', 'ST'].map(c => ({ v: c, l: c }))} />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Permanent Address</label>
@@ -280,26 +306,27 @@ const MyApplications = ({
                   onChange={handleChange} 
                   disabled={locked.permanentAddress}
                   rows="3" 
-                  className={`w-full rounded-xl px-4 py-3 text-sm font-bold border outline-none transition-all resize-none ${
-                    !locked.permanentAddress ? 'bg-white border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10' : 'bg-slate-50 text-slate-400 border-slate-100'
-                  } ${formErrors.permanentAddress ? 'border-rose-300' : ''}`} 
+                  className={cn(
+                    "w-full rounded-xl px-4 py-3 text-sm font-bold border outline-none transition-all resize-none",
+                    !locked.permanentAddress ? "bg-white border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" : "bg-slate-50 text-slate-400 border-slate-100",
+                    formErrors.permanentAddress ? "border-rose-300" : ""
+                  )} 
                 />
               </div>
             </div>
           </section>
 
-          {/* SECTION: LOGISTICS & FILE UPLOAD */}
           <section className="space-y-6">
             <div className="flex items-center gap-3 border-b border-slate-50 pb-4">
                 <FiHome className="text-blue-600" size={18} />
                 <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-800">Additional Details</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SelectRow label="Are you a Hosteller?" name="isHosteller" value={formData.isHosteller} onChange={handleChange} fieldClass={fieldClass} editable={!locked.isHosteller} error={formErrors.isHosteller} options={[{ v: 'Yes', l: 'Yes' }, { v: 'No', l: 'No' }]} />
+              <SelectRow label="Are you a Hosteller?" name="isHosteller" value={formData.isHosteller} onChange={handleChange} editable={!locked.isHosteller} error={formErrors.isHosteller} options={[{ v: 'Yes', l: 'Yes' }, { v: 'No', l: 'No' }]} />
               {formData.isHosteller === 'Yes' && (
                 <>
-                  <InputRow label="Hostel Name" name="hostelName" value={formData.hostelName} onChange={handleChange} fieldClass={fieldClass} editable={!locked.hostelName} error={formErrors.hostelName} />
-                  <InputRow label="Hostel Room" name="hostelRoom" value={formData.hostelRoom} onChange={handleChange} fieldClass={fieldClass} editable={!locked.hostelRoom} error={formErrors.hostelRoom} />
+                  <InputRow label="Hostel Name" name="hostelName" value={formData.hostelName} onChange={handleChange} editable={!locked.hostelName} error={formErrors.hostelName} />
+                  <InputRow label="Hostel Room" name="hostelRoom" value={formData.hostelRoom} onChange={handleChange} editable={!locked.hostelRoom} error={formErrors.hostelRoom} />
                 </>
               )}
               
@@ -312,7 +339,7 @@ const MyApplications = ({
                       name="proof_document_url" 
                       accept="application/pdf" 
                       onChange={onFileChange}
-                      disabled={uploading} // Disable while uploading
+                      disabled={uploading}
                       className="absolute inset-0 opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
                     />
                     <div className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 group-hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
@@ -358,11 +385,9 @@ const MyApplications = ({
             </div>
             
             <Button 
-              variant="primary" 
+              variant={isRejected ? "danger" : "primary"} 
               onClick={handleSave} 
-              className={`w-full sm:w-auto px-12 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-white rounded-2xl shadow-2xl transition-all active:scale-95 ${
-                isRejected ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-200' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'
-              }`}
+              className="w-full sm:w-auto px-12 py-4 text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl"
               disabled={submitting || uploading || !!localFileError}
             >
               {submitting ? (
