@@ -2,42 +2,65 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiUser, FiLock, FiLogIn, FiShield, FiArrowLeft, 
-  FiRefreshCw, FiShieldOff, 
-  FiEye, FiEyeOff // ✅ Imported Eye Icons
+  FiRefreshCw, FiShieldOff, FiEye, FiEyeOff 
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useStudentAuth } from '../../contexts/StudentAuthContext';
-import { Input } from '../../components/ui/Input';
-import { Button } from '../../components/ui/Button';
+
+// --- INTEGRATED UI COMPONENTS ---
+
+const cn = (...classes) => classes.filter(Boolean).join(" ");
+
+const Input = React.forwardRef(({ className, type, ...props }, ref) => {
+  return (
+    <input
+      type={type}
+      className={cn(
+        "flex h-10 w-full rounded-md border border-gray-200 bg-background px-3 py-2 text-base ring-offset-background transition-all file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        className
+      )}
+      ref={ref}
+      {...props}
+    />
+  );
+});
+Input.displayName = "Input";
+
+const Button = React.forwardRef(({ className, variant = "default", size = "default", ...props }, ref) => {
+  const baseStyles = "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50";
+  
+  return (
+    <button
+      className={cn(baseStyles, className)}
+      ref={ref}
+      {...props}
+    />
+  );
+});
+Button.displayName = "Button";
+
+// --- MAIN LOGIN COMPONENT ---
 
 const StudentLogin = () => {
   const { login } = useStudentAuth();
   const navigate = useNavigate();
   
-  // --- Auth States ---
   const [credentials, setCredentials] = useState({ identifier: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // ✅ New State for Password Visibility
   const [showPassword, setShowPassword] = useState(false);
 
-  // --- CAPTCHA States ---
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaImage, setCaptchaImage] = useState(null); 
   const [captchaHash, setCaptchaHash] = useState('');    
   const [captchaLoading, setCaptchaLoading] = useState(true);
 
-  // --- 1. CLEAN SLATE PROTOCOL ---
   useEffect(() => {
     localStorage.removeItem('studentToken');
     localStorage.removeItem('token');
   }, []);
 
-  /**
-   * ✅ Integrated Fetch Captcha Logic
-   */
   const fetchCaptcha = async () => {
     setCaptchaLoading(true);
     setError(''); 
@@ -45,9 +68,7 @@ const StudentLogin = () => {
     try {
       const rawBase = import.meta.env.VITE_API_BASE || '';
       const API_BASE = rawBase.replace(/\/+$/g, ''); 
-      
       const response = await axios.get(`${API_BASE}/api/captcha/generate`);
-
       setCaptchaImage(response.data.image); 
       setCaptchaHash(response.data.captcha_hash); 
     } catch (err) {
@@ -93,12 +114,9 @@ const StudentLogin = () => {
         captcha_input: captchaInput,
         captcha_hash: captchaHash 
       });
-      
       navigate('/student/dashboard');
-
     } catch (err) {
       let errorMsg = 'Login failed';
-
       if (err.response?.status === 403) {
         errorMsg = "Access Forbidden. Your account may be locked or credentials invalid.";
       } else if (err.response?.data?.detail) {
@@ -107,11 +125,9 @@ const StudentLogin = () => {
       } else if (err.message) {
         errorMsg = err.message;
       }
-
       setError(String(errorMsg));
       fetchCaptcha(); 
       setCaptchaInput(''); 
-      
     } finally {
       setLoading(false);
     }
@@ -136,7 +152,7 @@ const StudentLogin = () => {
         <FiArrowLeft className="text-slate-600 group-hover:-translate-x-1 transition-transform" size={18} />
       </button>
 
-      <div className="w-full max-w-4xl grid lg:grid-cols-10 bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/10 border border-slate-100 overflow-hidden relative z-10">
+      <div className="w-full h-full lg:h-auto max-w-4xl grid lg:grid-cols-10 bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/10 border border-slate-100 overflow-hidden relative z-10">
         
         {/* Left Side: Branding */}
         <div className="lg:col-span-4 bg-slate-900 p-10 flex flex-col justify-between text-white relative">
@@ -166,7 +182,7 @@ const StudentLogin = () => {
 
         {/* Right Side: Form */}
         <div className="lg:col-span-6 p-8 lg:p-12 flex flex-col justify-center">
-          <div className="max-w-sm mx-auto w-full">
+          <div className="max-sm mx-auto w-full">
             <div className="mb-6">
               <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Student Sign In</h2>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Identity Management System</p>
@@ -189,13 +205,12 @@ const StudentLogin = () => {
               <div className="space-y-1">
                 <label className={labelStyle}>Enrollment / Roll No</label>
                 <div className="relative">
-                  <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={16} />
                   <Input
                     name="identifier"
                     value={credentials.identifier}
                     onChange={handleChange}
-                    // ✅ Updated Class: outline-none, ring-1, ring-blue-500
-                    className="pl-12 h-11 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all w-full"
+                    className="pl-12 h-11 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white transition-all w-full"
                     required
                   />
                 </div>
@@ -207,23 +222,20 @@ const StudentLogin = () => {
                   <button type="button" className="text-[10px] font-black text-blue-600 hover:text-blue-800 uppercase tracking-wider">Forgot?</button>
                 </div>
                 <div className="relative">
-                  <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                  <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 z-10" size={16} />
                   <Input
                     name="password"
-                    // ✅ Dynamic Type
                     type={showPassword ? "text" : "password"}
                     value={credentials.password}
                     onChange={handleChange}
-                    // ✅ Updated Class + Padding Right for Eye Icon
-                    className="pl-12 pr-10 h-11 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all w-full"
+                    className="pl-12 pr-10 h-11 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white transition-all w-full"
                     required
                   />
                   
-                  {/* ✅ Toggle Button */}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 cursor-pointer outline-none transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 cursor-pointer z-10 outline-none transition-colors"
                   >
                     {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                   </button>
@@ -262,8 +274,7 @@ const StudentLogin = () => {
                       onChange={(e) => setCaptchaInput(e.target.value)}
                       placeholder="CODE"
                       autoComplete="off"
-                      // ✅ Updated Class: Thin blue border
-                      className="h-11 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs font-black uppercase tracking-[0.25em] focus:bg-white outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 w-full"
+                      className="h-11 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs font-black uppercase tracking-[0.25em] focus:bg-white w-full"
                       required
                     />
                   </div>
